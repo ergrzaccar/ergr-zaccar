@@ -7,7 +7,14 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Internal source documents
+docs-source/presentations/*
+docs-source/organigrammes/*
+!docs-source/presentations/.gitkeep
+!docs-source/organigrammes/.gitkeep
+
 node_modules
+.npm-cache
 dist
 dist-ssr
 coverage

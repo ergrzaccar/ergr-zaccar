@@ -1,11 +1,11 @@
-import { AppLayout } from './layouts/AppLayout'
-import { HomePage } from './pages/HomePage'
+import { AppProviders } from './app/providers/AppProviders'
+import { AppRouter } from './app/router'
 
 function App() {
   return (
-    <AppLayout>
-      <HomePage />
-    </AppLayout>
+    <AppProviders>
+      <AppRouter />
+    </AppProviders>
   )
 }
 

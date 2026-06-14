@@ -1,23 +1,48 @@
-import { Menu, X } from 'lucide-react'
+import { ChevronDown, Menu, X } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 
 import { siteRoutes } from '../../app/routes'
 import { cn } from '../../utils/cn'
 import { LanguageSwitcher } from '../navigation/LanguageSwitcher'
 import { ThemeSwitcher } from '../navigation/ThemeSwitcher'
 
+const desktopNavigationGroups = [
+  {
+    id: 'company',
+    labelKey: 'navigationGroups.company',
+    routeIds: ['about', 'organization', 'contact'],
+  },
+  {
+    id: 'activities',
+    labelKey: 'navigationGroups.activities',
+    routeIds: ['activities', 'nurseries', 'projects'],
+  },
+  {
+    id: 'resources',
+    labelKey: 'navigationGroups.resources',
+    routeIds: ['resources', 'careers'],
+  },
+  {
+    id: 'information',
+    labelKey: 'navigationGroups.information',
+    routeIds: ['news', 'tenders'],
+  },
+] as const
+
 export function Header() {
   const { t } = useTranslation()
+  const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
   const shouldReduceMotion = useReducedMotion()
+  const homeRoute = siteRoutes.find((route) => route.id === 'home')
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--header-bg)] backdrop-blur-xl">
-      <div className="site-container flex min-h-20 items-center justify-between gap-4">
-        <NavLink to="/" className="group flex items-center gap-3" onClick={() => setIsOpen(false)}>
+      <div className="site-container flex min-h-20 items-center justify-between gap-5">
+        <NavLink to="/" className="brand-link group" onClick={() => setIsOpen(false)}>
           <span className="grid size-11 place-items-center rounded-md bg-[var(--brand-primary)] text-sm font-black text-[var(--text-on-brand)] shadow-sm">
             ER
           </span>
@@ -31,16 +56,51 @@ export function Header() {
           </span>
         </NavLink>
 
-        <nav className="hidden items-center gap-1 xl:flex" aria-label={t('navigation.primary')}>
-          {siteRoutes.slice(0, 8).map((route) => (
+        <nav className="desktop-nav" aria-label={t('navigation.primary')}>
+          {homeRoute && (
             <NavLink
-              key={route.id}
-              to={route.path}
+              to={homeRoute.path}
               className={({ isActive }) => cn('nav-link', isActive && 'nav-link-active')}
             >
-              {t(route.labelKey)}
+              {t(homeRoute.labelKey)}
             </NavLink>
-          ))}
+          )}
+
+          {desktopNavigationGroups.map((group) => {
+            const groupRoutes = group.routeIds
+              .map((routeId) => siteRoutes.find((route) => route.id === routeId))
+              .filter((route) => route !== undefined)
+            const isGroupActive = groupRoutes.some((route) => route.path === location.pathname)
+
+            return (
+              <details key={group.id} className="desktop-nav-group">
+                <summary
+                  className={cn('nav-link nav-link-summary', isGroupActive && 'nav-link-active')}
+                >
+                  <span>{t(group.labelKey)}</span>
+                  <ChevronDown className="size-3.5" aria-hidden="true" />
+                </summary>
+                <div className="desktop-nav-menu">
+                  {groupRoutes.map((route) => {
+                    const Icon = route.icon
+
+                    return (
+                      <NavLink
+                        key={route.id}
+                        to={route.path}
+                        className={({ isActive }) =>
+                          cn('desktop-nav-menu-link', isActive && 'desktop-nav-menu-link-active')
+                        }
+                      >
+                        <Icon className="size-4" aria-hidden="true" />
+                        <span>{t(route.labelKey)}</span>
+                      </NavLink>
+                    )
+                  })}
+                </div>
+              </details>
+            )
+          })}
         </nav>
 
         <div className="hidden items-center gap-2 xl:flex">

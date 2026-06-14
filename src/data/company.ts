@@ -1,22 +1,22 @@
 export const company = {
   id: 'ergr-zaccar',
   shortName: 'ERGR Zaccar',
-  legalName: 'Entreprise Regionale de Genie Rural Zaccar',
+  legalName: 'Entreprise Régionale de Génie Rural Zaccar',
   arabicName: 'المؤسسة الجهوية للهندسة الريفية زكار',
-  groupName: 'Groupe Genie Rural - GGR',
+  groupName: 'Groupe Génie Rural - GGR',
   legalStatus: {
-    fr: 'Entreprise publique economique par actions, soumise aux dispositions du code de commerce.',
+    fr: 'Entreprise publique économique par actions, soumise aux dispositions du code de commerce.',
     ar: 'مؤسسة عمومية اقتصادية ذات أسهم تخضع لأحكام القانون التجاري.',
   },
   ownership: {
-    fr: 'Capital detenu entierement par le Groupe Genie Rural.',
+    fr: 'Capital détenu entièrement par le Groupe Génie Rural.',
     ar: 'رأس مالها مملوك بالكامل لمجمع الهندسة الريفية.',
   },
   headquarters: {
     label: 'Haouch Rouiba / Rouiba, Alger',
     city: 'Rouiba',
     wilaya: 'Alger',
-    country: 'Algerie',
+    country: 'Algérie',
   },
   shareCapital: {
     amount: 471_100_000,
@@ -24,7 +24,7 @@ export const company = {
     display: '471 100 000 DA',
   },
   positioning: {
-    fr: 'Entreprise publique specialisee dans le genie rural, la foresterie et le developpement rural.',
+    fr: 'Entreprise publique spécialisée dans le génie rural, la foresterie et le développement rural.',
     ar: 'مؤسسة عمومية متخصصة في الهندسة الريفية والغابات والتنمية الريفية.',
   },
   history: [
@@ -35,12 +35,12 @@ export const company = {
     },
     {
       period: '1990-1998',
-      nameFr: 'Office Regional de Developpement Forestier',
+      nameFr: 'Office Régional de Développement Forestier',
       nameAr: 'الديوان الجهوي للتنمية الغابية',
     },
     {
-      period: '1998-aujourd hui',
-      nameFr: 'Entreprise Regionale de Genie Rural Zaccar',
+      period: "1998-aujourd'hui",
+      nameFr: 'Entreprise Régionale de Génie Rural Zaccar',
       nameAr: 'المؤسسة الجهوية للهندسة الريفية زكار',
     },
   ],

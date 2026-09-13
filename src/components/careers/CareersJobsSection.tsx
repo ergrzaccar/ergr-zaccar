@@ -13,6 +13,7 @@ import { Reveal } from '../animation/Reveal'
 import { CareerJobCard } from './CareerJobCard'
 import { CareerJobModal } from './CareerJobModal'
 import { CareersFilterBar } from './CareersFilterBar'
+import { AlertBanner } from '../alerts/AlertBanner'
 
 interface CareersJobsSectionProps {
   onApplyForJob: (offer: CareerJobOffer) => void
@@ -93,6 +94,9 @@ export function CareersJobsSection({ onApplyForJob }: CareersJobsSectionProps) {
           <h2 className="section-heading mt-2">{t('careersPage.filters.title')}</h2>
           <p className="section-description mt-3">{t('careersPage.filters.description')}</p>
         </Reveal>
+
+        {/* Prominent Alert Subscription Banner (Solution B) */}
+        <AlertBanner topic="careers" />
 
         {/* Filter Bar */}
         <CareersFilterBar

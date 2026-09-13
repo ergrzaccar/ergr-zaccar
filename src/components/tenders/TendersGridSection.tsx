@@ -12,6 +12,7 @@ import { Reveal } from '../animation/Reveal'
 import { TenderCard } from './TenderCard'
 import { TenderDetailModal } from './TenderDetailModal'
 import { TendersFilterBar } from './TendersFilterBar'
+import { AlertBanner } from '../alerts/AlertBanner'
 
 export function TendersGridSection() {
   const { t } = useTranslation()
@@ -73,6 +74,9 @@ export function TendersGridSection() {
           <h2 className="section-heading mt-2">{t('tendersPage.filters.title')}</h2>
           <p className="section-description mt-3">{t('tendersPage.filters.description')}</p>
         </Reveal>
+
+        {/* Prominent Alert Subscription Banner (Solution B) */}
+        <AlertBanner topic="tenders" />
 
         <TendersFilterBar
           status={status}

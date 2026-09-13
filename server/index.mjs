@@ -5,6 +5,7 @@ import nodemailer from 'nodemailer'
 import multer from 'multer'
 import fs from 'fs'
 import path from 'path'
+import crypto from 'crypto'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -20,8 +21,28 @@ const RECIPIENT_EMAIL = (process.env.RECIPIENT_EMAIL || 'zaccar.informatique@gma
 // Ensure local inbox storage directories exist
 const inboxDir = path.resolve(__dirname, 'inbox')
 const uploadsDir = path.resolve(inboxDir, 'uploads')
+const subscribersFile = path.resolve(inboxDir, 'subscribers.json')
+
 if (!fs.existsSync(inboxDir)) fs.mkdirSync(inboxDir, { recursive: true })
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
+
+// Helper to read subscribers
+function getSubscribers() {
+  if (!fs.existsSync(subscribersFile)) {
+    return []
+  }
+  try {
+    const raw = fs.readFileSync(subscribersFile, 'utf8')
+    return JSON.parse(raw)
+  } catch {
+    return []
+  }
+}
+
+// Helper to save subscribers
+function saveSubscribers(subscribers) {
+  fs.writeFileSync(subscribersFile, JSON.stringify(subscribers, null, 2), 'utf8')
+}
 
 // Middleware
 app.use(cors())
@@ -415,6 +436,254 @@ app.post('/api/careers/apply', upload.single('resume'), async (req, res) => {
   }
 })
 
+// ============================================================================
+// ENDPOINT 3: POST /api/alerts/subscribe (Inscription aux Alertes Officielles)
+// ============================================================================
+app.post('/api/alerts/subscribe', async (req, res) => {
+  try {
+    const { email, organizationName, tenders, careers, language = 'fr' } = req.body
+
+    // Validation
+    if (!email || typeof email !== 'string' || !email.includes('@') || !email.includes('.')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Une adresse e-mail valide est requise.',
+      })
+    }
+
+    const wantsTenders = Boolean(tenders)
+    const wantsCareers = Boolean(careers)
+
+    if (!wantsTenders && !wantsCareers) {
+      return res.status(400).json({
+        success: false,
+        error: 'Veuillez sélectionner au moins une catégorie d’alerte (Appels d’offres ou Recrutements).',
+      })
+    }
+
+    const normalizedEmail = email.trim().toLowerCase()
+    const subscribers = getSubscribers()
+    let subscriber = subscribers.find((s) => s.email === normalizedEmail)
+    const isNew = !subscriber
+    const token = subscriber?.token || crypto.randomUUID()
+    const now = new Date().toISOString()
+
+    if (isNew) {
+      subscriber = {
+        id: `SUB-${Date.now()}`,
+        email: normalizedEmail,
+        organizationName: (organizationName || '').trim(),
+        tenders: wantsTenders,
+        careers: wantsCareers,
+        language: language === 'ar' ? 'ar' : 'fr',
+        token,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      }
+      subscribers.push(subscriber)
+    } else {
+      subscriber.organizationName = (organizationName || subscriber.organizationName || '').trim()
+      subscriber.tenders = wantsTenders
+      subscriber.careers = wantsCareers
+      subscriber.language = language === 'ar' ? 'ar' : 'fr'
+      subscriber.active = true
+      subscriber.updatedAt = now
+    }
+
+    saveSubscribers(subscribers)
+    console.log(`[ERGR-ALERTES] 🔔 ${isNew ? 'Nouvel abonné' : 'Mise à jour'} : ${normalizedEmail} (Marchés: ${wantsTenders ? 'OUI' : 'NON'}, Emploi: ${wantsCareers ? 'OUI' : 'NON'})`)
+
+    // Envoi de l'e-mail de confirmation officiel
+    const transporter = getTransporter()
+    const host = req.get('host') || 'localhost'
+    const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'
+    const unsubscribeUrl = `${protocol}://${host}/api/alerts/unsubscribe?token=${token}`
+
+    const isAr = subscriber.language === 'ar'
+    const subject = isAr
+      ? 'تأكيد اشتراككم في الإشعارات الرسمية — م.ه.ر.ع زكار'
+      : 'Confirmation de votre abonnement aux alertes officielles — ERGR Zaccar'
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="${isAr ? 'ar' : 'fr'}" dir="${isAr ? 'rtl' : 'ltr'}">
+<head>
+  <meta charset="utf-8">
+  <title>${subject}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f5; margin: 0; padding: 20px; color: #1c2e24; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e1e7e4; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .header { background: linear-gradient(135deg, #0e3b2e 0%, #155e46 100%); color: #ffffff; padding: 28px 24px; text-align: center; }
+    .header h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
+    .header p { margin: 6px 0 0 0; font-size: 12px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px; }
+    .content { padding: 28px 24px; }
+    .greeting { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+    .box { background: #f0f7f4; border: 1px solid #d2e5dd; border-radius: 8px; padding: 16px; margin: 20px 0; }
+    .topic-item { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 14px; font-weight: 600; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; background: #006233; color: #ffffff; }
+    .law-note { font-size: 11px; color: #5a7566; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #edf2ef; }
+    .footer { background: #fbfdfc; padding: 18px 24px; text-align: center; font-size: 12px; color: #738a7c; border-top: 1px solid #edf2ef; }
+    .unsub-btn { display: inline-block; margin-top: 12px; font-size: 11px; color: #b91c1c; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>ERGR ZACCAR</h1>
+      <p>${isAr ? 'مجمع الهندسة الريفية — وزارة الفلاحة والتنمية الريفية' : 'Groupe Génie Rural — Tutelle MADR'}</p>
+    </div>
+    <div class="content">
+      <div class="greeting">${isAr ? 'مرحباً بكم،' : 'Madame, Monsieur,'}</div>
+      <p style="font-size: 14px; line-height: 1.6;">
+        ${isAr
+          ? 'تم تأكيد تسجيلكم بنجاح في نظام الإشعارات والتنبيهات الرسمية لـ <strong>المؤسسة الجهوية للهندسة الريفية زكار</strong>. ستصلكم إعلاناتنا فور نشرها تكريساً لمبدأ الشفافية وتكافؤ الفرص.'
+          : 'Votre inscription aux alertes officielles de l’<strong>Entreprise Régionale de Génie Rural Zaccar</strong> a bien été confirmée. Vous serez désormais informé en priorité de nos publications institutionnelles.'}
+      </p>
+
+      <div class="box">
+        <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; color: #0e3b2e;">
+          ${isAr ? 'مجالات الإشعارات المفعلة لبريدكم :' : 'Vos préférences d’alerte sélectionnées :'}
+        </div>
+        ${wantsTenders ? `<div class="topic-item">✅ <span>${isAr ? 'إعلانات الصفقات العمومية وطلبات العروض (AON)' : 'Appels d’offres, consultations et marchés publics'}</span></div>` : ''}
+        ${wantsCareers ? `<div class="topic-item">✅ <span>${isAr ? 'إعلانات التوظيف ومسابقات الالتحاق' : 'Concours et avis de recrutement'}</span></div>` : ''}
+      </div>
+
+      <p class="law-note">
+        ${isAr
+          ? 'طبقا للقانون رقم 18-07 المؤرخ في 10 جوان 2018 المتعلق بحماية الأشخاص الطبيعيين في مجال معالجة المعطيات ذات الطابع الشخصي، تبقى بياناتكم سرية ولا يتم مشاركتها أبداً.'
+          : 'Conformément à la loi n° 18-07 du 10 juin 2018 relative à la protection des personnes physiques dans le traitement des données à caractère personnel, votre adresse e-mail demeure strictement confidentielle et sécurisée.'}
+      </p>
+    </div>
+    <div class="footer">
+      <div>© ${new Date().getFullYear()} ERGR Zaccar — EPE/SPA Algérie</div>
+      <div>Route Nationale N° 4, BP 45, Rouiba, Alger</div>
+      <a href="${unsubscribeUrl}" class="unsub-btn">${isAr ? 'إلغاء الاشتراك من التنبيهات بنقرة واحدة' : 'Se désinscrire des alertes en 1 clic'}</a>
+    </div>
+  </div>
+</body>
+</html>
+`
+
+    if (transporter) {
+      await transporter.sendMail({
+        from: `"ERGR Zaccar Alertes" <${process.env.SMTP_USER.trim()}>`,
+        to: normalizedEmail,
+        subject,
+        html: htmlContent,
+      })
+      console.log(`[ERGR-ALERTES] ✉️ E-mail de confirmation expédié vers ${normalizedEmail}`)
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: isAr
+        ? 'تم تسجيل وتأكيد اشتراككم بنجاح.'
+        : 'Votre abonnement aux alertes a été enregistré et confirmé avec succès.',
+      subscriber: {
+        email: normalizedEmail,
+        organizationName: subscriber.organizationName,
+        tenders: subscriber.tenders,
+        careers: subscriber.careers,
+      },
+    })
+  } catch (error) {
+    console.error('[ERGR-ALERTES] ❌ Erreur lors de l’abonnement :', error)
+    return res.status(500).json({
+      success: false,
+      error: 'Une erreur technique est survenue lors de l’enregistrement.',
+    })
+  }
+})
+
+// ============================================================================
+// ENDPOINT 4: GET & POST /api/alerts/unsubscribe (Désinscription)
+// ============================================================================
+app.get('/api/alerts/unsubscribe', (req, res) => {
+  const { token } = req.query
+  if (!token) {
+    return res.status(400).send('Jeton de désinscription manquant.')
+  }
+
+  const subscribers = getSubscribers()
+  const subscriber = subscribers.find((s) => s.token === token)
+
+  if (!subscriber) {
+    return res.status(404).send(`
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"><title>Lien invalide</title></head>
+      <body style="font-family:sans-serif; text-align:center; padding:50px;">
+        <h2>Lien de désinscription invalide ou expiré</h2>
+        <p>Ce lien ne correspond à aucun abonnement actif.</p>
+        <a href="/" style="color:#006233; font-weight:bold;">Retourner sur le site de l'ERGR Zaccar</a>
+      </body>
+      </html>
+    `)
+  }
+
+  subscriber.active = false
+  subscriber.unsubscribedAt = new Date().toISOString()
+  saveSubscribers(subscribers)
+  console.log(`[ERGR-ALERTES] 🛑 Désinscription effectuée pour : ${subscriber.email}`)
+
+  const isAr = subscriber.language === 'ar'
+  return res.status(200).send(`
+    <!DOCTYPE html>
+    <html lang="${isAr ? 'ar' : 'fr'}" dir="${isAr ? 'rtl' : 'ltr'}">
+    <head>
+      <meta charset="utf-8">
+      <title>${isAr ? 'تأكيد إلغاء الاشتراك' : 'Désinscription confirmée'}</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f4f6f5; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+        .card { background:#fff; padding:40px; border-radius:12px; max-width:500px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.08); border:1px solid #e1e7e4; }
+        .icon { font-size:48px; margin-bottom:16px; }
+        h1 { font-size:22px; color:#0e3b2e; margin:0 0 12px; }
+        p { color:#5a7566; font-size:15px; line-height:1.5; margin-bottom:24px; }
+        .btn { display:inline-block; background:#006233; color:#fff; text-decoration:none; padding:12px 24px; border-radius:8px; font-weight:700; font-size:14px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="icon">✅</div>
+        <h1>${isAr ? 'تم إلغاء الاشتراك بنجاح' : 'Désinscription confirmée'}</h1>
+        <p>${isAr ? 'تم إيقاف إرسال الإشعارات إلى بريدكم. يمكنكم إعادة الاشتراك في أي وقت عبر بوابتنا الرسمية.' : 'Votre adresse e-mail a bien été retirée de notre liste de diffusion. Vous ne recevrez plus d’alertes de notre part.'}</p>
+        <a href="/" class="btn">${isAr ? 'العودة إلى البوابة الرسمية' : 'Retourner au portail officiel'}</a>
+      </div>
+    </body>
+    </html>
+  `)
+})
+
+app.post('/api/alerts/unsubscribe', (req, res) => {
+  const { token, email } = req.body
+  const subscribers = getSubscribers()
+  const subscriber = subscribers.find((s) => (token && s.token === token) || (email && s.email === email.trim().toLowerCase()))
+
+  if (!subscriber) {
+    return res.status(404).json({ success: false, error: 'Abonné introuvable.' })
+  }
+
+  subscriber.active = false
+  subscriber.unsubscribedAt = new Date().toISOString()
+  saveSubscribers(subscribers)
+  return res.status(200).json({ success: true, message: 'Désinscription effectuée avec succès.' })
+})
+
+// ============================================================================
+// ENDPOINT 5: GET /api/alerts/stats (Monitoring interne)
+// ============================================================================
+app.get('/api/alerts/stats', (_req, res) => {
+  const subscribers = getSubscribers()
+  const active = subscribers.filter((s) => s.active)
+  return res.status(200).json({
+    total: subscribers.length,
+    activeCount: active.length,
+    tendersSubscribers: active.filter((s) => s.tenders).length,
+    careersSubscribers: active.filter((s) => s.careers).length,
+  })
+})
+
 // Start server
 app.listen(PORT, () => {
   const isConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)
@@ -427,6 +696,7 @@ app.listen(PORT, () => {
   console.log(` • Endpoint Santé : http://localhost:${PORT}/api/health`)
   console.log(` • Form Contact   : POST http://localhost:${PORT}/api/contact`)
   console.log(` • Recrutement    : POST http://localhost:${PORT}/api/careers/apply`)
+  console.log(` • Alertes E-mail : POST http://localhost:${PORT}/api/alerts/subscribe`)
   console.log(`======================================================\n`)
 
   // Test SMTP connection immediately

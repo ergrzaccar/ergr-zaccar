@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import type { CareerJobOffer } from '../data/careersPage'
+import { AlertSubscriptionCard } from '../components/alerts/AlertSubscriptionCard'
 import { CareersApplicationSection } from '../components/careers/CareersApplicationSection'
 import { CareersCtaSection } from '../components/careers/CareersCtaSection'
 import { CareersInternshipsSection } from '../components/careers/CareersInternshipsSection'
@@ -45,6 +46,10 @@ export function CareersPage() {
         initialOffer={targetOffer}
         initialType={applicationType}
       />
+
+      <div className="site-container">
+        <AlertSubscriptionCard defaultTopic="careers" />
+      </div>
 
       <CareersCtaSection />
     </main>

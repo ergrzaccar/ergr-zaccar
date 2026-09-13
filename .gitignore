@@ -12,6 +12,8 @@ docs-source/presentations/*
 docs-source/organigrammes/*
 !docs-source/presentations/.gitkeep
 !docs-source/organigrammes/.gitkeep
+public/images/entete.pdf
+public/images/entete-preview.png
 
 node_modules
 .npm-cache

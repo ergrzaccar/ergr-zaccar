@@ -1,0 +1,43 @@
+services:
+  # ============================================================================
+  # 1. Backend Service (Node.js / Express / Nodemailer Google SMTP)
+  # ============================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: ergr-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+    volumes:
+      - inbox_data:/app/server/inbox
+    networks:
+      - ergr-network
+
+  # ============================================================================
+  # 2. Frontend Service (Vite React Build + Nginx Reverse Proxy)
+  # ============================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: ergr-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - ergr-network
+
+volumes:
+  inbox_data:
+    driver: local
+
+networks:
+  ergr-network:
+    driver: bridge

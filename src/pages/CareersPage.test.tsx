@@ -226,7 +226,8 @@ describe('CareersPage', () => {
     fireEvent.change(fileInput, { target: { files: [file] } })
 
     // Check consent checkbox
-    const consentCheckbox = screen.getByRole('checkbox')
+    const consentCheckbox = document.querySelector('.careers-checkbox') as HTMLInputElement
+    expect(consentCheckbox).toBeInTheDocument()
     fireEvent.click(consentCheckbox)
 
     // Resubmit

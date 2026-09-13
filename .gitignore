@@ -23,6 +23,7 @@ coverage
 playwright-report
 test-results
 *.local
+DOSSIER_EXPLOITATION.md
 .env
 .env.*
 !.env.example

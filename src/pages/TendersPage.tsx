@@ -1,3 +1,4 @@
+import { AlertSubscriptionCard } from '../components/alerts/AlertSubscriptionCard'
 import { SEOHead } from '../components/seo/SEOHead'
 import { TendersCtaSection } from '../components/tenders/TendersCtaSection'
 import { TendersGridSection } from '../components/tenders/TendersGridSection'
@@ -11,6 +12,9 @@ export function TendersPage() {
       <main className="tenders-page">
         <TendersPageHero />
         <TendersGridSection />
+        <div className="site-container">
+          <AlertSubscriptionCard defaultTopic="tenders" />
+        </div>
         <TendersGuidelinesSection />
         <TendersCtaSection />
       </main>

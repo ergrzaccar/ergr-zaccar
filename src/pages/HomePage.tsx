@@ -1,5 +1,4 @@
 import { SEOHead } from '../components/seo/SEOHead'
-import { HomeActivitiesSection } from '../components/home/HomeActivitiesSection'
 import { HomeCapabilitiesSection } from '../components/home/HomeCapabilitiesSection'
 import { HomeCtaSection } from '../components/home/HomeCtaSection'
 import { HomeHero } from '../components/home/HomeHero'
@@ -16,7 +15,6 @@ export function HomePage() {
       <main>
         <HomeHero />
         <HomeMissionsSection />
-        <HomeActivitiesSection />
         <HomeProjectsSection />
         <HomeImpactStatsSection />
         <HomeTerritorySection />

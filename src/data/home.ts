@@ -377,12 +377,15 @@ export const featuredStatIds = [
 export const featuredActivityIds = [
   'forest-heritage-restoration',
   'land-development-watersheds',
-  'forest-maintenance',
-  'forestry-engineering',
   'desertification-control',
   'plant-production',
-  'green-spaces',
-  'wood-cork-secondary-products',
+] as const
+
+export const homeMissionPreviewIds = [
+  'reforestation',
+  'rural-tracks',
+  'watersheds',
+  'plant-production',
 ] as const
 
 export const featuredEquipmentIds = [

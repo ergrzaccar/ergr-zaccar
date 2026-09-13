@@ -1,0 +1,6 @@
+# robots.txt pour le portail institutionnel de l'ERGR Zaccar (https://www.ergr-zaccar.dz)
+User-agent: *
+Allow: /
+
+# Directives d'indexation du plan du site
+Sitemap: https://www.ergr-zaccar.dz/sitemap.xml

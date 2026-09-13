@@ -59,3 +59,17 @@ export const company = {
     'docs-source/organigrammes/Organigramme.pptx',
   ],
 } as const
+
+export const companyIdentity = {
+  legalName: company.legalName,
+  arabicName: company.arabicName,
+  legalStatus: 'EPE / SPA (Entreprise Publique Économique par actions)',
+  tutelle: "Ministère de l'Agriculture et du Développement Rural",
+  ownership: '100% Groupe Génie Rural (GGR)',
+  shareCapital: company.shareCapital.display,
+  headquarters: {
+    address: 'Haouch Rouiba - Rouiba, Alger',
+    city: company.headquarters.city,
+    wilaya: company.headquarters.wilaya,
+  },
+} as const

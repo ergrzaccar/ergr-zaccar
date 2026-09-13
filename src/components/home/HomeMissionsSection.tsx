@@ -1,9 +1,10 @@
 import type { LucideIcon } from 'lucide-react'
-import { Flame, Leaf, Mountain, Route, ShieldCheck, Sprout } from 'lucide-react'
+import { ArrowUpRight, Flame, Leaf, Mountain, Route, ShieldCheck, Sprout } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 
-import { fieldMissionItems } from '../../data/home'
+import { fieldMissionItems, homeMissionPreviewIds } from '../../data/home'
 import { HomeSectionHeader } from './HomeSectionHeader'
 
 const missionIcons: Record<(typeof fieldMissionItems)[number]['id'], LucideIcon> = {
@@ -18,6 +19,9 @@ const missionIcons: Record<(typeof fieldMissionItems)[number]['id'], LucideIcon>
 export function HomeMissionsSection() {
   const { t } = useTranslation()
   const shouldReduceMotion = useReducedMotion()
+  const previewItems = homeMissionPreviewIds
+    .map((id) => fieldMissionItems.find((item) => item.id === id))
+    .filter((item) => item !== undefined)
 
   return (
     <section className="section-band">
@@ -33,10 +37,14 @@ export function HomeMissionsSection() {
               <span>{t('home.missions.proofLabel')}</span>
               <strong>{t('home.missions.proofValue')}</strong>
             </div>
+            <Link to="/domaines-activite" className="premium-button mt-5">
+              <span>{t('home.missions.cta')}</span>
+              <ArrowUpRight className="size-4" aria-hidden="true" />
+            </Link>
           </div>
 
           <div className="mission-grid">
-            {fieldMissionItems.map((item, index) => {
+            {previewItems.map((item, index) => {
               const Icon = missionIcons[item.id]
 
               return (

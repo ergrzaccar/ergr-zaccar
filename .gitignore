@@ -25,6 +25,11 @@ test-results
 .env.*
 !.env.example
 
+# Backend inbox and uploaded files
+server/inbox/*
+!server/inbox/.gitkeep
+!server/inbox/uploads/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

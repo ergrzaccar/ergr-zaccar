@@ -8,6 +8,7 @@ import { siteRoutes } from '../../app/routes'
 import { cn } from '../../utils/cn'
 import { LanguageSwitcher } from '../navigation/LanguageSwitcher'
 import { ThemeSwitcher } from '../navigation/ThemeSwitcher'
+import { SearchTrigger } from '../search/SearchTrigger'
 
 const desktopNavigationGroups = [
   {
@@ -103,25 +104,29 @@ export function Header() {
           })}
         </nav>
 
-        <div className="hidden items-center gap-2 xl:flex">
+        <div className="hidden items-center gap-3 xl:flex">
+          <SearchTrigger />
           <LanguageSwitcher />
           <ThemeSwitcher />
         </div>
 
-        <button
-          type="button"
-          className="control-button xl:hidden"
-          onClick={() => setIsOpen((value) => !value)}
-          aria-expanded={isOpen}
-          aria-controls="mobile-menu"
-          aria-label={isOpen ? t('navigation.closeMenu') : t('navigation.openMenu')}
-        >
-          {isOpen ? (
-            <X className="size-5" aria-hidden="true" />
-          ) : (
-            <Menu className="size-5" aria-hidden="true" />
-          )}
-        </button>
+        <div className="flex items-center gap-2 xl:hidden">
+          <SearchTrigger compact />
+          <button
+            type="button"
+            className="control-button"
+            onClick={() => setIsOpen((value) => !value)}
+            aria-expanded={isOpen}
+            aria-controls="mobile-menu"
+            aria-label={isOpen ? t('navigation.closeMenu') : t('navigation.openMenu')}
+          >
+            {isOpen ? (
+              <X className="size-5" aria-hidden="true" />
+            ) : (
+              <Menu className="size-5" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
 
       {isOpen && (
@@ -134,6 +139,12 @@ export function Header() {
           transition={{ duration: 0.22 }}
         >
           <div className="site-container grid gap-8 py-8">
+            <div className="pb-2">
+              <SearchTrigger
+                className="w-full justify-between py-2.5 px-4"
+                onClick={() => setIsOpen(false)}
+              />
+            </div>
             <div className="grid gap-3">
               {siteRoutes.map((route, index) => {
                 const Icon = route.icon

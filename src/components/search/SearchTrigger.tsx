@@ -37,13 +37,14 @@ export function SearchTrigger({ className, compact = false, onClick }: SearchTri
       type="button"
       onClick={handleClick}
       className={cn(
-        'group inline-flex items-center gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-1.5 text-xs text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--brand-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
+        'group inline-flex shrink-0 items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2.5 py-1.5 text-xs text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--brand-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
         className
       )}
       aria-label={t('search.triggerAria')}
+      title={t('search.triggerAria')}
     >
-      <Search className="size-3.5 text-[var(--text-muted)] group-hover:text-[var(--brand-primary)]" aria-hidden="true" />
-      <span className="font-normal">{t('search.trigger')}</span>
+      <Search className="size-3.5 text-[var(--text-muted)] group-hover:text-[var(--brand-primary)] shrink-0" aria-hidden="true" />
+      <span className="font-normal hidden 2xl:inline">{t('search.trigger')}</span>
       <kbd className="inline-flex items-center rounded border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--text-muted)] shadow-2xs">
         {t('search.shortcut')}
       </kbd>

@@ -42,8 +42,8 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--header-bg)] backdrop-blur-xl">
-      <div className="site-container flex min-h-20 items-center justify-between gap-5">
-        <NavLink to="/" className="brand-link group" onClick={() => setIsOpen(false)}>
+      <div className="mx-auto flex min-h-20 w-[min(100%-2rem,1380px)] items-center justify-between gap-3 xl:gap-5">
+        <NavLink to="/" className="brand-link group shrink-0" onClick={() => setIsOpen(false)}>
           <span className="grid size-11 place-items-center rounded-md bg-[var(--brand-primary)] text-sm font-black text-[var(--text-on-brand)] shadow-sm">
             ER
           </span>
@@ -104,7 +104,7 @@ export function Header() {
           })}
         </nav>
 
-        <div className="hidden items-center gap-3 xl:flex">
+        <div className="hidden shrink-0 items-center gap-2 xl:flex">
           <SearchTrigger />
           <LanguageSwitcher />
           <ThemeSwitcher />
@@ -177,7 +177,7 @@ export function Header() {
 
             <div className="grid gap-4 border-t border-[var(--border-subtle)] pt-6">
               <LanguageSwitcher className="justify-center" />
-              <ThemeSwitcher className="justify-center" />
+              <ThemeSwitcher className="justify-center" showLabels />
             </div>
           </div>
         </motion.div>

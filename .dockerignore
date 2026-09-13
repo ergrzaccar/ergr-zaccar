@@ -1,4 +1,6 @@
 node_modules
+.npm-cache
+docs-source
 npm-debug.log
 dist
 dist-ssr

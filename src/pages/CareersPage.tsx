@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import type { CareerJobOffer } from '../data/careersPage'
+import { AlertFloatingButton } from '../components/alerts/AlertFloatingButton'
 import { AlertSubscriptionCard } from '../components/alerts/AlertSubscriptionCard'
 import { CareersApplicationSection } from '../components/careers/CareersApplicationSection'
 import { CareersCtaSection } from '../components/careers/CareersCtaSection'
@@ -52,6 +53,7 @@ export function CareersPage() {
       </div>
 
       <CareersCtaSection />
+      <AlertFloatingButton defaultTopic="careers" />
     </main>
   )
 }

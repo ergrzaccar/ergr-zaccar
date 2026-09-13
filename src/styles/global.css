@@ -11770,149 +11770,194 @@ html[data-theme='dark'] {
 }
 
 /* ==========================================================================
-   Alert Floating Button & Modal Dialog (Option D)
+   Alert Banner (Solution B — Prominent Banner above Filters)
    ========================================================================== */
 
-.alert-fab-btn {
-  position: fixed;
-  bottom: clamp(1.25rem, 3vw, 2.25rem);
-  inset-inline-start: clamp(1.25rem, 3vw, 2.25rem);
-  z-index: 85;
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: clamp(1rem, 2vw, 1.35rem) clamp(1.2rem, 2.5vw, 1.75rem);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--brand-primary), var(--surface-card) 95%);
+  border: 1.5px solid color-mix(in srgb, var(--brand-primary), transparent 82%);
+  box-shadow: 0 4px 20px rgba(14, 59, 46, 0.05);
+  margin-bottom: 2rem;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+html[data-theme='dark'] .alert-banner {
+  background: color-mix(in srgb, var(--brand-primary), var(--surface-section) 92%);
+  border-color: color-mix(in srgb, var(--brand-primary), transparent 75%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.alert-banner:hover {
+  border-color: color-mix(in srgb, var(--brand-primary), transparent 60%);
+  box-shadow: 0 6px 24px rgba(14, 59, 46, 0.09);
+}
+
+.alert-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-banner-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--brand-primary), transparent 88%);
+  color: var(--brand-primary);
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--brand-primary), transparent 75%);
+  transition: transform 0.25s ease;
+}
+
+.alert-banner:hover .alert-banner-icon-box {
+  transform: scale(1.06) rotate(-4deg);
+}
+
+.alert-banner-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-banner-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.75rem 1.35rem;
-  border-radius: 9999px;
-  background: var(--brand-primary);
-  color: var(--text-on-brand);
-  border: 1.5px solid color-mix(in srgb, var(--brand-accent), transparent 45%);
-  box-shadow: 0 10px 28px rgba(14, 59, 46, 0.35);
-  cursor: pointer;
+  gap: 0.35rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  font-size: 0.88rem;
-  font-family: inherit;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary), transparent 90%);
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  margin-bottom: 0.35rem;
 }
 
-.alert-fab-btn:hover {
-  background: var(--brand-secondary);
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 14px 36px rgba(14, 59, 46, 0.45);
-}
-
-.alert-fab-btn:active {
-  transform: translateY(0) scale(0.98);
-}
-
-.alert-fab-icon-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.alert-fab-pulse-dot {
-  position: absolute;
-  top: -2px;
-  inset-inline-end: -2px;
-  width: 9px;
-  height: 9px;
+.alert-banner-tag-pulse {
+  width: 6px;
+  height: 6px;
   border-radius: 9999px;
   background: var(--brand-accent);
-  box-shadow: 0 0 0 2px var(--surface-page);
-  animation: fabPulse 2s infinite;
+  display: inline-block;
+  animation: bannerDotPulse 1.8s infinite;
 }
 
-@keyframes fabPulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(215, 186, 98, 0.7);
-  }
-  70% {
-    transform: scale(1.15);
-    box-shadow: 0 0 0 7px rgba(215, 186, 98, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(215, 186, 98, 0);
-  }
+@keyframes bannerDotPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.3); }
 }
 
-.alert-fab-label {
-  white-space: nowrap;
-}
-
-/* Modal Overlay */
-.alert-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(7, 20, 15, 0.78);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(1rem, 3vw, 2rem);
-  animation: alertFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.alert-modal-card {
-  position: relative;
-  width: 100%;
-  max-width: 680px;
-  max-height: 90vh;
-  overflow-y: auto;
-  border-radius: var(--radius-card);
-  animation: alertScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.alert-modal-close-btn {
-  position: absolute;
-  top: 1.25rem;
-  inset-inline-end: 1.25rem;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 9999px;
-  background: var(--surface-glass);
-  border: 1px solid var(--border-subtle);
+.alert-banner-title {
+  font-size: 1.05rem;
+  font-weight: 800;
   color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s ease;
+  margin: 0 0 0.2rem 0;
+  line-height: 1.35;
 }
 
-.alert-modal-close-btn:hover {
+.alert-banner-desc {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.alert-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.72rem 1.35rem;
+  border-radius: 9999px;
   background: var(--brand-primary);
   color: var(--text-on-brand);
-  transform: scale(1.08);
+  font-weight: 700;
+  font-size: 0.88rem;
+  font-family: inherit;
+  border: 1px solid color-mix(in srgb, var(--brand-accent), transparent 60%);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(14, 59, 46, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.alert-modal-content .alert-subscription-card {
-  margin-block: 0;
+.alert-banner-btn:hover {
+  background: var(--brand-secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(14, 59, 46, 0.35);
+  color: var(--text-on-brand);
 }
 
-@keyframes alertFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.alert-banner-btn:active {
+  transform: translateY(0);
 }
 
-@keyframes alertScaleIn {
-  from { opacity: 0; transform: scale(0.94) translateY(12px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-@media (max-width: 640px) {
-  .alert-fab-btn {
-    padding: 0.65rem 1rem;
-    font-size: 0.82rem;
+/* Glow animation when user clicks the banner to highlight the subscription card */
+@keyframes alertCardHighlight {
+  0% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  30%, 70% {
+    box-shadow: 0 0 0 5px rgba(0, 98, 51, 0.45), 0 16px 36px rgba(14, 59, 46, 0.25);
+    border-color: var(--brand-primary);
+    transform: scale(1.008);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    transform: scale(1);
   }
 }
+
+.alert-card-highlighted {
+  animation: alertCardHighlight 2.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@media (max-width: 768px) {
+  .alert-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.15rem;
+    padding: 1.1rem 1.15rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .alert-banner-left {
+    align-items: flex-start;
+    gap: 0.9rem;
+  }
+
+  .alert-banner-icon-box {
+    width: 42px;
+    height: 42px;
+  }
+
+  .alert-banner-title {
+    font-size: 0.96rem;
+  }
+
+  .alert-banner-desc {
+    font-size: 0.82rem;
+  }
+
+  .alert-banner-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
 
 
 

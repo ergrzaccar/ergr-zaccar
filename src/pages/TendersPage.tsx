@@ -1,4 +1,3 @@
-import { AlertFloatingButton } from '../components/alerts/AlertFloatingButton'
 import { AlertSubscriptionCard } from '../components/alerts/AlertSubscriptionCard'
 import { SEOHead } from '../components/seo/SEOHead'
 import { TendersCtaSection } from '../components/tenders/TendersCtaSection'
@@ -18,7 +17,6 @@ export function TendersPage() {
         </div>
         <TendersGuidelinesSection />
         <TendersCtaSection />
-        <AlertFloatingButton defaultTopic="tenders" />
       </main>
     </>
   )

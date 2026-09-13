@@ -44,20 +44,20 @@ function saveSubscribers(subscribers) {
   fs.writeFileSync(subscribersFile, JSON.stringify(subscribers, null, 2), 'utf8')
 }
 
-// Helper to generate the official corporate letterhead table for emails
+// Helper to generate the official corporate letterhead table for emails (Optimized for Mobile & Desktop)
 function getOfficialEmailHeaderHtml() {
   return `
-  <table cellpadding="0" cellspacing="0" border="0" style="width:100%; border:1.5px solid #0e3b2e; border-collapse:collapse; background-color:#ffffff; margin-bottom:20px;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" class="official-header-table" style="width:100%; max-width:100%; border:1.5px solid #0e3b2e; border-collapse:collapse; background-color:#ffffff; margin-bottom:18px; table-layout:fixed;">
     <tr>
-      <td style="width:95px; padding:12px 10px; border-right:1.5px solid #0e3b2e; text-align:center; vertical-align:middle; background-color:#ffffff;">
-        <img src="cid:ergr-logo@official" alt="ERGR Zaccar" style="width:72px; height:auto; display:block; margin:0 auto; border:0;" />
+      <td class="official-header-logo-td" width="62" style="width:62px; min-width:52px; max-width:68px; padding:6px 4px; border-right:1.5px solid #0e3b2e; text-align:center; vertical-align:middle; background-color:#ffffff;">
+        <img src="cid:ergr-logo@official" alt="ERGR Zaccar" class="official-header-logo-img" style="width:46px; max-width:100%; height:auto; display:block; margin:0 auto; border:0;" />
       </td>
-      <td style="padding:10px 14px; text-align:center; vertical-align:middle; background-color:#ffffff; font-family:Arial, Helvetica, sans-serif;">
-        <div style="font-size:14px; font-weight:bold; color:#0e3b2e; font-family:'Amiri', Tahoma, Arial, sans-serif; margin-bottom:2px;">مـجـمـع الـهـنـدسـة الـريـفـيـة</div>
-        <div style="font-size:12.5px; font-weight:bold; color:#0e3b2e; letter-spacing:0.5px; margin-bottom:4px;">GROUPE GENIE RURAL – G.G.R.</div>
-        <div style="font-size:15px; font-weight:bold; color:#006233; font-family:'Amiri', Tahoma, Arial, sans-serif; margin-bottom:2px;">المؤسسة الجهوية للهندسة الريفية - زكار</div>
-        <div style="font-size:13px; font-weight:bold; color:#006233; margin-bottom:4px;">Entreprise Régionale de Génie Rural – ZACCAR</div>
-        <div style="font-size:10.5px; font-weight:bold; color:#555555; text-transform:uppercase; letter-spacing:0.3px;">Spa au capital social de 471.100.000 DA</div>
+      <td class="official-header-text-td" style="padding:6px 6px; text-align:center; vertical-align:middle; background-color:#ffffff; font-family:Arial, Helvetica, sans-serif; overflow:hidden;">
+        <div class="hdr-txt-ar-ggr" style="font-size:11px; font-weight:bold; color:#0e3b2e; font-family:'Amiri', Tahoma, Arial, sans-serif; line-height:1.2; margin:0 0 1px 0; white-space:nowrap;">مـجـمـع الـهـنـدسـة الـريـفـيـة</div>
+        <div class="hdr-txt-fr-ggr" style="font-size:9.5px; font-weight:bold; color:#0e3b2e; letter-spacing:0.3px; line-height:1.2; margin:0 0 3px 0; white-space:nowrap;">GROUPE GENIE RURAL – G.G.R.</div>
+        <div class="hdr-txt-ar-ergr" style="font-size:12px; font-weight:bold; color:#006233; font-family:'Amiri', Tahoma, Arial, sans-serif; line-height:1.2; margin:0 0 1px 0; white-space:nowrap;">المؤسسة الجهوية للهندسة الريفية - زكار</div>
+        <div class="hdr-txt-fr-ergr" style="font-size:10px; font-weight:bold; color:#006233; line-height:1.2; margin:0 0 3px 0; white-space:nowrap;">Entreprise Régionale de Génie Rural – ZACCAR</div>
+        <div class="hdr-txt-capital" style="font-size:8px; font-weight:bold; color:#555555; text-transform:uppercase; letter-spacing:0.2px; line-height:1.2; white-space:nowrap; margin:0;">Spa au capital social de 471.100.000 DA</div>
       </td>
     </tr>
   </table>
@@ -545,17 +545,44 @@ app.post('/api/alerts/subscribe', async (req, res) => {
 <html lang="${isAr ? 'ar' : 'fr'}" dir="${isAr ? 'rtl' : 'ltr'}">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${subject}</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f5; margin: 0; padding: 20px; color: #1c2e24; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #d5ded9; box-shadow: 0 4px 14px rgba(0,0,0,0.06); padding: 20px 24px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f5; margin: 0; padding: 20px 10px; color: #1c2e24; -webkit-text-size-adjust: 100%; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #d5ded9; box-shadow: 0 4px 14px rgba(0,0,0,0.06); padding: 20px 22px; box-sizing: border-box; }
     .greeting { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
     .box { background: #f0f7f4; border: 1px solid #d2e5dd; border-radius: 8px; padding: 16px; margin: 20px 0; }
     .topic-item { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 14px; font-weight: 600; }
     .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; background: #006233; color: #ffffff; }
     .law-note { font-size: 11px; color: #5a7566; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #edf2ef; }
-    .footer { background: #fbfdfc; padding: 18px 24px; text-align: center; font-size: 12px; color: #738a7c; border-top: 1px solid #edf2ef; margin: 20px -24px -20px; }
+    .footer { background: #fbfdfc; padding: 18px 24px; text-align: center; font-size: 12px; color: #738a7c; border-top: 1px solid #edf2ef; margin: 20px -22px -20px; }
     .unsub-btn { display: inline-block; margin-top: 12px; font-size: 11px; color: #b91c1c; text-decoration: underline; }
+
+    @media only screen and (min-width: 540px) {
+      .official-header-logo-td { width: 75px !important; padding: 8px 6px !important; }
+      .official-header-logo-img { width: 58px !important; }
+      .official-header-text-td { padding: 8px 10px !important; }
+      .hdr-txt-ar-ggr { font-size: 13px !important; }
+      .hdr-txt-fr-ggr { font-size: 11px !important; }
+      .hdr-txt-ar-ergr { font-size: 14px !important; }
+      .hdr-txt-fr-ergr { font-size: 11.5px !important; }
+      .hdr-txt-capital { font-size: 9px !important; }
+    }
+
+    @media only screen and (max-width: 480px) {
+      body { padding: 6px 4px !important; }
+      .container { padding: 12px 10px !important; margin: 4px auto !important; border-radius: 6px !important; }
+      .official-header-logo-td { width: 52px !important; min-width: 48px !important; max-width: 55px !important; padding: 4px 2px !important; }
+      .official-header-logo-img { width: 40px !important; }
+      .official-header-text-td { padding: 4px 4px !important; }
+      .hdr-txt-ar-ggr { font-size: 10px !important; }
+      .hdr-txt-fr-ggr { font-size: 8px !important; letter-spacing: 0.1px !important; }
+      .hdr-txt-ar-ergr { font-size: 11px !important; }
+      .hdr-txt-fr-ergr { font-size: 8.5px !important; }
+      .hdr-txt-capital { font-size: 7px !important; letter-spacing: 0px !important; }
+      .greeting { font-size: 14px !important; }
+      .footer { margin: 16px -10px -12px !important; padding: 12px 10px !important; }
+    }
   </style>
 </head>
 <body>
@@ -767,9 +794,10 @@ app.post('/api/alerts/broadcast', async (req, res) => {
 <html lang="${isAr ? 'ar' : 'fr'}" dir="${isAr ? 'rtl' : 'ltr'}">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { margin:0; padding:0; background:#f4f6f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-    .wrapper { max-width:620px; margin:20px auto; background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #d5ded9; box-shadow:0 4px 14px rgba(0,0,0,0.06); padding:20px 24px; }
+    body { margin:0; padding:16px 10px; background:#f4f6f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-text-size-adjust: 100%; }
+    .wrapper { max-width:620px; margin:16px auto; background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #d5ded9; box-shadow:0 4px 14px rgba(0,0,0,0.06); padding:20px 22px; box-sizing: border-box; }
     .body { color:#1d2522; line-height:1.6; }
     .alert-badge { display:inline-block; background:#e6f4ea; color:#006233; font-weight:800; font-size:12px; padding:6px 14px; border-radius:999px; border:1px solid #c2e2cc; margin-bottom:16px; text-transform:uppercase; }
     .tender-title { font-size:20px; font-weight:800; color:#071e16; margin:0 0 8px; }
@@ -781,8 +809,35 @@ app.post('/api/alerts/broadcast', async (req, res) => {
     .detail-val { color:#1d2522; }
     .cta-btn { display:inline-block; background:#006233; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-weight:800; font-size:15px; margin:20px 0; text-align:center; }
     .law-note { font-size:12px; color:#6d7972; border-top:1px solid #e5ece8; padding-top:16px; margin-top:24px; line-height:1.5; }
-    .footer { background:#edf2ef; padding:18px 24px; text-align:center; font-size:12px; color:#5a6860; margin:20px -24px -20px; border-top:1px solid #e5ece8; }
+    .footer { background:#edf2ef; padding:18px 24px; text-align:center; font-size:12px; color:#5a6860; margin:20px -22px -20px; border-top:1px solid #e5ece8; }
     .unsub-link { color:#8b0000; text-decoration:underline; font-weight:600; }
+
+    @media only screen and (min-width: 540px) {
+      .official-header-logo-td { width: 75px !important; padding: 8px 6px !important; }
+      .official-header-logo-img { width: 58px !important; }
+      .official-header-text-td { padding: 8px 10px !important; }
+      .hdr-txt-ar-ggr { font-size: 13px !important; }
+      .hdr-txt-fr-ggr { font-size: 11px !important; }
+      .hdr-txt-ar-ergr { font-size: 14px !important; }
+      .hdr-txt-fr-ergr { font-size: 11.5px !important; }
+      .hdr-txt-capital { font-size: 9px !important; }
+    }
+
+    @media only screen and (max-width: 480px) {
+      body { padding: 6px 4px !important; }
+      .wrapper { padding: 12px 10px !important; margin: 4px auto !important; border-radius: 6px !important; }
+      .official-header-logo-td { width: 52px !important; min-width: 48px !important; max-width: 55px !important; padding: 4px 2px !important; }
+      .official-header-logo-img { width: 40px !important; }
+      .official-header-text-td { padding: 4px 4px !important; }
+      .hdr-txt-ar-ggr { font-size: 10px !important; }
+      .hdr-txt-fr-ggr { font-size: 8px !important; letter-spacing: 0.1px !important; }
+      .hdr-txt-ar-ergr { font-size: 11px !important; }
+      .hdr-txt-fr-ergr { font-size: 8.5px !important; }
+      .hdr-txt-capital { font-size: 7px !important; letter-spacing: 0px !important; }
+      .tender-title { font-size: 16px !important; }
+      .cta-btn { width: 100% !important; box-sizing: border-box !important; padding: 12px 16px !important; font-size: 14px !important; }
+      .footer { margin: 16px -10px -12px !important; padding: 12px 10px !important; }
+    }
   </style>
 </head>
 <body>

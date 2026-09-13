@@ -44,6 +44,41 @@ function saveSubscribers(subscribers) {
   fs.writeFileSync(subscribersFile, JSON.stringify(subscribers, null, 2), 'utf8')
 }
 
+// Helper to generate the official corporate letterhead table for emails
+function getOfficialEmailHeaderHtml() {
+  return `
+  <table cellpadding="0" cellspacing="0" border="0" style="width:100%; border:1.5px solid #0e3b2e; border-collapse:collapse; background-color:#ffffff; margin-bottom:20px;">
+    <tr>
+      <td style="width:95px; padding:12px 10px; border-right:1.5px solid #0e3b2e; text-align:center; vertical-align:middle; background-color:#ffffff;">
+        <img src="cid:ergr-logo@official" alt="ERGR Zaccar" style="width:72px; height:auto; display:block; margin:0 auto; border:0;" />
+      </td>
+      <td style="padding:10px 14px; text-align:center; vertical-align:middle; background-color:#ffffff; font-family:Arial, Helvetica, sans-serif;">
+        <div style="font-size:14px; font-weight:bold; color:#0e3b2e; font-family:'Amiri', Tahoma, Arial, sans-serif; margin-bottom:2px;">مـجـمـع الـهـنـدسـة الـريـفـيـة</div>
+        <div style="font-size:12.5px; font-weight:bold; color:#0e3b2e; letter-spacing:0.5px; margin-bottom:4px;">GROUPE GENIE RURAL – G.G.R.</div>
+        <div style="font-size:15px; font-weight:bold; color:#006233; font-family:'Amiri', Tahoma, Arial, sans-serif; margin-bottom:2px;">المؤسسة الجهوية للهندسة الريفية - زكار</div>
+        <div style="font-size:13px; font-weight:bold; color:#006233; margin-bottom:4px;">Entreprise Régionale de Génie Rural – ZACCAR</div>
+        <div style="font-size:10.5px; font-weight:bold; color:#555555; text-transform:uppercase; letter-spacing:0.3px;">Spa au capital social de 471.100.000 DA</div>
+      </td>
+    </tr>
+  </table>
+  `
+}
+
+function getEmailLogoAttachments() {
+  const localLogo = path.resolve(__dirname, 'assets/logo-ergr-zaccar.png')
+  const fallbackLogo = path.resolve(__dirname, '../public/images/logo-ergr-zaccar.png')
+  const logoPath = fs.existsSync(localLogo) ? localLogo : (fs.existsSync(fallbackLogo) ? fallbackLogo : null)
+
+  if (!logoPath) return []
+  return [
+    {
+      filename: 'logo-ergr-zaccar.png',
+      path: logoPath,
+      cid: 'ergr-logo@official',
+    },
+  ]
+}
+
 // Middleware
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
@@ -513,26 +548,19 @@ app.post('/api/alerts/subscribe', async (req, res) => {
   <title>${subject}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f5; margin: 0; padding: 20px; color: #1c2e24; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e1e7e4; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .header { background: linear-gradient(135deg, #0e3b2e 0%, #155e46 100%); color: #ffffff; padding: 28px 24px; text-align: center; }
-    .header h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
-    .header p { margin: 6px 0 0 0; font-size: 12px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px; }
-    .content { padding: 28px 24px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #d5ded9; box-shadow: 0 4px 14px rgba(0,0,0,0.06); padding: 20px 24px; }
     .greeting { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
     .box { background: #f0f7f4; border: 1px solid #d2e5dd; border-radius: 8px; padding: 16px; margin: 20px 0; }
     .topic-item { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 14px; font-weight: 600; }
     .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; background: #006233; color: #ffffff; }
     .law-note { font-size: 11px; color: #5a7566; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #edf2ef; }
-    .footer { background: #fbfdfc; padding: 18px 24px; text-align: center; font-size: 12px; color: #738a7c; border-top: 1px solid #edf2ef; }
+    .footer { background: #fbfdfc; padding: 18px 24px; text-align: center; font-size: 12px; color: #738a7c; border-top: 1px solid #edf2ef; margin: 20px -24px -20px; }
     .unsub-btn { display: inline-block; margin-top: 12px; font-size: 11px; color: #b91c1c; text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1>ERGR ZACCAR</h1>
-      <p>${isAr ? 'مجمع الهندسة الريفية — وزارة الفلاحة والتنمية الريفية' : 'Groupe Génie Rural — Tutelle MADR'}</p>
-    </div>
+    ${getOfficialEmailHeaderHtml()}
     <div class="content">
       <div class="greeting">${isAr ? 'مرحباً بكم،' : 'Madame, Monsieur,'}</div>
       <p style="font-size: 14px; line-height: 1.6;">
@@ -571,6 +599,7 @@ app.post('/api/alerts/subscribe', async (req, res) => {
         to: normalizedEmail,
         subject,
         html: htmlContent,
+        attachments: getEmailLogoAttachments(),
       })
       console.log(`[ERGR-ALERTES] ✉️ E-mail de confirmation expédié vers ${normalizedEmail}`)
     }
@@ -740,11 +769,8 @@ app.post('/api/alerts/broadcast', async (req, res) => {
   <meta charset="utf-8">
   <style>
     body { margin:0; padding:0; background:#f4f6f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-    .wrapper { max-width:620px; margin:24px auto; background:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #dbe2de; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
-    .header { background:linear-gradient(135deg, #071e16 0%, #006233 100%); padding:28px 24px; text-align:center; color:#ffffff; }
-    .logo-text { font-size:22px; font-weight:900; letter-spacing:1px; margin:0; }
-    .sub-logo { font-size:12px; opacity:0.85; margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
-    .body { padding:28px 24px; color:#1d2522; line-height:1.6; }
+    .wrapper { max-width:620px; margin:20px auto; background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #d5ded9; box-shadow:0 4px 14px rgba(0,0,0,0.06); padding:20px 24px; }
+    .body { color:#1d2522; line-height:1.6; }
     .alert-badge { display:inline-block; background:#e6f4ea; color:#006233; font-weight:800; font-size:12px; padding:6px 14px; border-radius:999px; border:1px solid #c2e2cc; margin-bottom:16px; text-transform:uppercase; }
     .tender-title { font-size:20px; font-weight:800; color:#071e16; margin:0 0 8px; }
     .tender-ref { font-size:14px; font-weight:700; color:#006233; margin-bottom:18px; }
@@ -755,16 +781,13 @@ app.post('/api/alerts/broadcast', async (req, res) => {
     .detail-val { color:#1d2522; }
     .cta-btn { display:inline-block; background:#006233; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-weight:800; font-size:15px; margin:20px 0; text-align:center; }
     .law-note { font-size:12px; color:#6d7972; border-top:1px solid #e5ece8; padding-top:16px; margin-top:24px; line-height:1.5; }
-    .footer { background:#edf2ef; padding:18px 24px; text-align:center; font-size:12px; color:#5a6860; }
+    .footer { background:#edf2ef; padding:18px 24px; text-align:center; font-size:12px; color:#5a6860; margin:20px -24px -20px; border-top:1px solid #e5ece8; }
     .unsub-link { color:#8b0000; text-decoration:underline; font-weight:600; }
   </style>
 </head>
 <body>
   <div class="wrapper">
-    <div class="header">
-      <div class="logo-text">ERGR ZACCAR</div>
-      <div class="sub-logo">Entreprise Régionale de Génie Rural — EPE/SPA</div>
-    </div>
+    ${getOfficialEmailHeaderHtml()}
     <div class="body">
       <div class="alert-badge">${badgeText}</div>
       <h1 class="tender-title">${title}</h1>
@@ -815,6 +838,7 @@ app.post('/api/alerts/broadcast', async (req, res) => {
           to: sub.email,
           subject,
           html,
+          attachments: getEmailLogoAttachments(),
         })
         console.log(`[ERGR-ALERTES] 📢 Alerte diffusée avec succès vers ${sub.email}`)
       }

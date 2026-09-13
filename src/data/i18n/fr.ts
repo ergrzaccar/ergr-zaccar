@@ -2585,6 +2585,10 @@ export const fr = {
     errorGeneral: 'Une erreur technique est survenue. Veuillez réessayer plus tard.',
     lawNotice: 'Conformément à la loi n° 18-07 relative à la protection des personnes physiques dans le traitement des données à caractère personnel, vos coordonnées restent strictement confidentielles et sécurisées. Désinscription en 1 clic à tout moment.',
     activeNotice: 'Service officiel et gratuit de l’Entreprise Régionale de Génie Rural Zaccar (EPE/SPA).',
+    floatingBtnTenders: 'Alertes Marchés Publics',
+    floatingBtnCareers: 'Alertes Recrutement & Concours',
+    floatingBtnDefault: 'Alertes par e-mail',
+    modalClose: 'Fermer la fenêtre',
   },
   error: {
     title: 'Une erreur est survenue',

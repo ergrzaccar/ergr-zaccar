@@ -684,6 +684,159 @@ app.get('/api/alerts/stats', (_req, res) => {
   })
 })
 
+// ============================================================================
+// ENDPOINT 6: POST /api/alerts/broadcast (Diffusion officielle d'une alerte)
+// ============================================================================
+app.post('/api/alerts/broadcast', async (req, res) => {
+  try {
+    const {
+      type = 'tenders', // 'tenders' | 'careers'
+      title,
+      reference,
+      summary,
+      deadline,
+      link = 'http://localhost:5173/appels-offres',
+      qualification,
+    } = req.body
+
+    if (!title || !reference) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le titre et la référence de l’avis sont obligatoires.',
+      })
+    }
+
+    const subscribers = getSubscribers()
+    const targetSubscribers = subscribers.filter((s) => s.active && s[type])
+
+    if (targetSubscribers.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'Aucun abonné actif pour cette catégorie.',
+        count: 0,
+      })
+    }
+
+    const transporter = getTransporter()
+    const origin = req.get('origin') || `http://${req.get('host') || 'localhost'}`
+    const results = []
+
+    for (const sub of targetSubscribers) {
+      const isAr = sub.language === 'ar'
+      const unsubscribeUrl = `${origin}/api/alerts/unsubscribe?token=${sub.token}`
+      const isTender = type === 'tenders'
+
+      const badgeText = isTender
+        ? (isAr ? 'إشعار بمناقصة جديدة' : 'NOUVEL AVIS D’APPEL D’OFFRES')
+        : (isAr ? 'إعلان توظيف جديد' : 'NOUVEL AVIS DE RECRUTEMENT')
+
+      const subject = isTender
+        ? `[ERGR Zaccar - Alerte Marché] ${reference} : ${title}`
+        : `[ERGR Zaccar - Alerte Recrutement] ${reference} : ${title}`
+
+      const html = `<!DOCTYPE html>
+<html lang="${isAr ? 'ar' : 'fr'}" dir="${isAr ? 'rtl' : 'ltr'}">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { margin:0; padding:0; background:#f4f6f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    .wrapper { max-width:620px; margin:24px auto; background:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #dbe2de; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
+    .header { background:linear-gradient(135deg, #071e16 0%, #006233 100%); padding:28px 24px; text-align:center; color:#ffffff; }
+    .logo-text { font-size:22px; font-weight:900; letter-spacing:1px; margin:0; }
+    .sub-logo { font-size:12px; opacity:0.85; margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+    .body { padding:28px 24px; color:#1d2522; line-height:1.6; }
+    .alert-badge { display:inline-block; background:#e6f4ea; color:#006233; font-weight:800; font-size:12px; padding:6px 14px; border-radius:999px; border:1px solid #c2e2cc; margin-bottom:16px; text-transform:uppercase; }
+    .tender-title { font-size:20px; font-weight:800; color:#071e16; margin:0 0 8px; }
+    .tender-ref { font-size:14px; font-weight:700; color:#006233; margin-bottom:18px; }
+    .details-card { background:#f9fbfa; border:1px solid #e1e8e4; border-radius:8px; padding:18px; margin:20px 0; }
+    .detail-row { margin-bottom:10px; font-size:14px; }
+    .detail-row:last-child { margin-bottom:0; }
+    .detail-label { font-weight:700; color:#4c5a53; }
+    .detail-val { color:#1d2522; }
+    .cta-btn { display:inline-block; background:#006233; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-weight:800; font-size:15px; margin:20px 0; text-align:center; }
+    .law-note { font-size:12px; color:#6d7972; border-top:1px solid #e5ece8; padding-top:16px; margin-top:24px; line-height:1.5; }
+    .footer { background:#edf2ef; padding:18px 24px; text-align:center; font-size:12px; color:#5a6860; }
+    .unsub-link { color:#8b0000; text-decoration:underline; font-weight:600; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <div class="logo-text">ERGR ZACCAR</div>
+      <div class="sub-logo">Entreprise Régionale de Génie Rural — EPE/SPA</div>
+    </div>
+    <div class="body">
+      <div class="alert-badge">${badgeText}</div>
+      <h1 class="tender-title">${title}</h1>
+      <div class="tender-ref">${isAr ? 'المرجع الرسمي :' : 'Référence officielle :'} <strong>${reference}</strong></div>
+      
+      <p>${isAr ? 'نعلمكم بنشر الإشعار التالي عبر بوابتنا الرسمية للشفافية والصفقات العمومية :' : 'Nous vous informons de la publication officielle de l’avis suivant sur notre portail institutionnel :'}</p>
+
+      <div class="details-card">
+        <div class="detail-row">
+          <span class="detail-label">${isAr ? 'الموضوع والوصف :' : 'Objet / Synthèse :'}</span>
+          <span class="detail-val">${summary || 'Travaux et prestations d’aménagement forestier et génie rural.'}</span>
+        </div>
+        ${qualification ? `
+        <div class="detail-row">
+          <span class="detail-label">${isAr ? 'المؤهلات المطلوبة :' : 'Qualification requise :'}</span>
+          <span class="detail-val">${qualification}</span>
+        </div>` : ''}
+        ${deadline ? `
+        <div class="detail-row">
+          <span class="detail-label">${isAr ? 'تاريخ وساعة الإيداع الأخيرة :' : 'Date limite de dépôt :'}</span>
+          <span class="detail-val" style="font-weight:700; color:#b91c1c;">${deadline}</span>
+        </div>` : ''}
+      </div>
+
+      <div style="text-align:center;">
+        <a href="${link}" class="cta-btn">${isAr ? 'الاطلاع على دفتر الشروط والتفاصيل' : 'Consulter le dossier & le cahier des charges'}</a>
+      </div>
+
+      <div class="law-note">
+        ${isAr 
+          ? 'تلقيتم هذا البريد بصفتكم مشتركين في نظام التنبيهات لمؤسسة زكار. طبقا لأحكام القانون رقم 18-07، تظل بياناتكم سرية ومحمية.'
+          : 'Vous recevez ce courriel car vous êtes inscrit au service de veille et d’alerte de l’ERGR Zaccar. Conformément à la loi n° 18-07, vos données demeurent strictement confidentielles.'}
+      </div>
+    </div>
+    <div class="footer">
+      <div>© ${new Date().getFullYear()} ERGR Zaccar — Groupe Génie Rural (GGR)</div>
+      <div style="margin-top:8px;">
+        <a href="${unsubscribeUrl}" class="unsub-link">${isAr ? 'إلغاء الاشتراك من التنبيهات بنقرة واحدة' : 'Se désinscrire de ces alertes en 1 clic'}</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`
+
+      if (transporter) {
+        await transporter.sendMail({
+          from: `"ERGR Zaccar Alertes" <${process.env.SMTP_USER.trim()}>`,
+          to: sub.email,
+          subject,
+          html,
+        })
+        console.log(`[ERGR-ALERTES] 📢 Alerte diffusée avec succès vers ${sub.email}`)
+      }
+      results.push(sub.email)
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Alerte diffusée à ${results.length} abonné(s).`,
+      count: results.length,
+      recipients: results,
+    })
+  } catch (err) {
+    console.error('[ERGR-ALERTES] ❌ Erreur lors de la diffusion :', err)
+    return res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la diffusion de l’alerte.',
+    })
+  }
+})
+
+
 // Start server
 app.listen(PORT, () => {
   const isConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)

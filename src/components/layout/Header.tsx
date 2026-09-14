@@ -43,9 +43,11 @@ export function Header() {
   const homeRoute = siteRoutes.find((route) => route.id === 'home')
 
   // Close dropdown when route changes
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(location.pathname)
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname)
     setOpenGroup(null)
-  }, [location.pathname])
+  }
 
   // Close dropdown when clicking outside or pressing Escape
   useEffect(() => {

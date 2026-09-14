@@ -9681,7 +9681,7 @@ html[data-theme='dark'] {
 
   .careers-internship-desc {
     font-size: 0.86rem;
-    color: var(--text-secondary),
+    color: var(--text-secondary);
     line-height: 1.6;
     margin-bottom: 1.25rem;
   }

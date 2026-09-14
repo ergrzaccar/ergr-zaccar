@@ -69,36 +69,37 @@ export const fr = {
       eyebrow: 'Production végétale',
       title: 'Pépinières',
       description:
-        'Structure de présentation des neuf pépinières et de leurs surfaces de production.',
+        'Découvrez les 9 pépinières régionales de l’ERGR Zaccar, nos capacités de production végétale, nos serres modernes et nos espèces forestières et fruitières.',
     },
     projects: {
       eyebrow: 'Terrain',
       title: 'Réalisations / Projets',
-      description: 'Base de future page filtrable par type de projet, région, mission et période.',
+      description:
+        'Consultez les grands projets et réalisations de terrain de l’ERGR Zaccar : reboisement, Barrage Vert, ouverture de pistes rurales et protection des bassins versants.',
     },
     resources: {
       eyebrow: 'Capacités',
       title: 'Moyens humains et matériels',
       description:
-        "Présentation future des équipes, parcs à matériel, engins et capacités d'intervention.",
+        'Découvrez le potentiel humain et matériel de l’ERGR Zaccar : plus de 490 engins spécialisés, 4 parcs techniques et des équipes qualifiées au service du territoire.',
     },
     organization: {
       eyebrow: 'Territoire',
       title: 'Organisation / Implantation',
       description:
-        'Carte future des directions régionales, unités, pépinières et parcs à matériel.',
+        'Organisation et maillage territorial de l’ERGR Zaccar : Direction générale, 3 directions régionales, 8 unités de wilaya et réseau opérationnel.',
     },
     news: {
       eyebrow: 'Communication',
       title: 'Actualités',
       description:
-        'Espace prévu pour les communiqués, événements, actions terrain et informations publiques.',
+        'Toute l’actualité de l’ERGR Zaccar : reportages sur le terrain, campagnes nationales de reboisement, partenariats scientifiques et espace presse.',
     },
     tenders: {
       eyebrow: 'Marchés publics',
       title: "Appels d'offres / Consultations",
       description:
-        'Espace prévu pour les avis, consultations, statuts et documents publics validés.',
+        'Avis d’appels d’offres, consultations et attributions de l’ERGR Zaccar. Téléchargez les cahiers des charges et abonnez-vous aux alertes fournisseurs.',
     },
     careers: {
       eyebrow: 'Ressources Humaines & Recrutement',
@@ -109,7 +110,8 @@ export const fr = {
     contact: {
       eyebrow: 'Contact institutionnel',
       title: 'Contact',
-      description: 'Base de future page contact avec formulaire, coordonnées, carte et services.',
+      description:
+        'Contactez la Direction Générale et les directions régionales de l’ERGR Zaccar. Coordonnées, numéros de téléphone officiels, formulaire et localisation.',
     },
     notFound: {
       title: 'Page introuvable — ERGR Zaccar',
@@ -783,7 +785,7 @@ export const fr = {
     navigation: 'Navigation secondaire',
     description:
       'Entreprise publique économique spécialisée dans le génie rural, la foresterie et le développement rural.',
-    legal: "Base technique locale - aucun document source PowerPoint n'est publié.",
+    legal: '© 2026 ERGR Zaccar — Entreprise Publique Économique (EPE/SPA), filiale du Groupe Génie Rural (GGR). Tous droits réservés.',
     partners: 'Partenaires',
     help: 'Assistance',
   },

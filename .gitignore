@@ -7,11 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Internal source documents
-docs-source/presentations/*
-docs-source/organigrammes/*
-!docs-source/presentations/.gitkeep
-!docs-source/organigrammes/.gitkeep
+# Internal source documents (Privé / Confidentiel)
+docs-source/
+doc-source/
 public/images/entete.pdf
 public/images/entete-preview.png
 

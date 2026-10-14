@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Building2, Droplets, Filter, MapPin, RotateCcw, Search, Sprout } from 'lucide-react'
+import { Building2, Droplets, Filter, MapPin, RotateCcw, Search, Sprout, TreePine } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 
@@ -10,10 +10,15 @@ import {
   type NurseryRegionFilter,
   type NurseryWilayaFilter,
 } from '../../data/nurseriesPage'
+import { getPlantsByNursery } from '../../data/plants'
 import { Reveal } from '../animation/Reveal'
 import { cn } from '../../utils/cn'
 
-export function NurseriesDirectorySection() {
+interface NurseriesDirectorySectionProps {
+  onSelectSpecies?: (speciesId: string) => void
+}
+
+export function NurseriesDirectorySection({ onSelectSpecies }: NurseriesDirectorySectionProps = {}) {
   const { t, i18n } = useTranslation()
   const shouldReduceMotion = useReducedMotion()
   const isArabic = i18n.language === 'ar'
@@ -199,6 +204,29 @@ export function NurseriesDirectorySection() {
                         {t('nurseriesPage.directory.irrigatedBadge')} (Réseau sous pression)
                       </span>
                     </div>
+
+                    {/* Produced Species in this nursery */}
+                    {getPlantsByNursery(nursery.id).length > 0 && (
+                      <div className="pt-3 border-t border-[var(--border-subtle)] space-y-1.5">
+                        <span className="text-[11px] font-semibold text-[var(--text-muted)] flex items-center gap-1">
+                          <TreePine className="size-3 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                          <span>{isArabic ? 'الأصناف المتوفرة بالمشتلة :' : 'Espèces cultivées :'}</span>
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {getPlantsByNursery(nursery.id).map((plant) => (
+                            <button
+                              key={plant.id}
+                              type="button"
+                              onClick={() => onSelectSpecies?.(plant.id)}
+                              className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+                              title={isArabic ? 'عرض بطاقة النبتة' : 'Consulter la fiche'}
+                            >
+                              {isArabic ? plant.commonNameAr : plant.commonNameFr}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </motion.article>
               )

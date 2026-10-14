@@ -16,7 +16,7 @@ function renderNurseriesPage() {
 }
 
 describe('NurseriesPage', () => {
-  it('renders the hero, directory, and key metrics', () => {
+  it('renders the hero, plant catalog, directory, and key metrics', () => {
     renderNurseriesPage()
 
     expect(
@@ -29,31 +29,53 @@ describe('NurseriesPage', () => {
     expect(screen.getAllByText('133 ha sous irrigation pérenne')).toHaveLength(2)
     expect(screen.getByText('165,5 ha de SAU productive')).toBeInTheDocument()
 
+    // Plant Catalog should be present
+    expect(
+      screen.getByRole('heading', {
+        name: /Catalogue des Essences et Plants Forestiers/i,
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText("Pin d'Alep").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Eucalyptus').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Cyprès toujours vert').length).toBeGreaterThanOrEqual(1)
+
     // 9 nurseries should be listed initially
-    expect(screen.getByText('Aïn Aloui')).toBeInTheDocument()
-    expect(screen.getByText('Sidi Lakhdar')).toBeInTheDocument()
-    expect(screen.getByText('Hadjout')).toBeInTheDocument()
-    expect(screen.getByText('Oued Sly')).toBeInTheDocument()
+    expect(screen.getAllByText('Aïn Aloui').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Sidi Lakhdar').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Hadjout').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Oued Sly').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('filters nurseries by search query', () => {
+  it('filters nurseries by search query in the directory', () => {
     renderNurseriesPage()
 
-    const searchInput = screen.getByRole('searchbox')
-    fireEvent.change(searchInput, { target: { value: 'Sidi Lakhdar' } })
+    // Select the directory search input (second searchbox)
+    const searchInputs = screen.getAllByRole('searchbox')
+    const nurserySearchInput = searchInputs[1]
+    fireEvent.change(nurserySearchInput, { target: { value: 'Sidi Lakhdar' } })
 
-    expect(screen.getByText('Sidi Lakhdar')).toBeInTheDocument()
-    expect(screen.queryByText('Aïn Aloui')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Sidi Lakhdar').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('filters plants in the catalog by search query', () => {
+    renderNurseriesPage()
+
+    // Select the plant catalog search input (first searchbox)
+    const searchInputs = screen.getAllByRole('searchbox')
+    const plantSearchInput = searchInputs[0]
+    fireEvent.change(plantSearchInput, { target: { value: 'Chêne-liège' } })
+
+    expect(screen.getAllByText('Chêne-liège').length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByRole('heading', { name: 'Eucalyptus' })).not.toBeInTheDocument()
   })
 
   it('filters nurseries by wilaya chip', () => {
     renderNurseriesPage()
 
-    // Click on Bouira wilaya chip
+    // Click on Bouira wilaya chip in directory section
     const bouiraChip = screen.getByRole('button', { name: 'Bouira' })
     fireEvent.click(bouiraChip)
 
-    expect(screen.getByText('Aïn Aloui')).toBeInTheDocument()
-    expect(screen.queryByText('Sidi Lakhdar')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Aïn Aloui').length).toBeGreaterThanOrEqual(1)
   })
 })

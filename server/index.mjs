@@ -79,10 +79,154 @@ function getEmailLogoAttachments() {
   ]
 }
 
-// Middleware
-app.use(cors())
-app.use(express.json({ limit: '10mb' }))
-app.use(express.urlencoded({ extended: true, limit: '10mb' }))
+// Security: Disable Express fingerprinting
+app.disable('x-powered-by')
+
+// Security: Whitelist CORS origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : [
+      'https://ergr-zaccar.dz',
+      'https://www.ergr-zaccar.dz',
+      'http://localhost:5173',
+      'http://localhost:5000',
+      'http://localhost',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1',
+    ]
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+        return callback(null, true)
+      }
+      return callback(new Error('CORS: Origine non autorisée.'))
+    },
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key'],
+  }),
+)
+
+// Security: Limit JSON payload to 256kb to prevent memory exhaustion (DoS)
+app.use(express.json({ limit: '256kb' }))
+app.use(express.urlencoded({ extended: true, limit: '256kb' }))
+
+// Security: In-memory sliding-window IP Rate Limiter
+function createRateLimiter({ windowMs, max, message }) {
+  const hits = new Map()
+
+  setInterval(() => {
+    const now = Date.now()
+    for (const [ip, data] of hits.entries()) {
+      if (now > data.resetTime) {
+        hits.delete(ip)
+      }
+    }
+  }, 60000).unref()
+
+  return (req, res, next) => {
+    const clientIp =
+      req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+      req.socket.remoteAddress ||
+      'unknown'
+    const now = Date.now()
+    const entry = hits.get(clientIp)
+
+    if (!entry || now > entry.resetTime) {
+      hits.set(clientIp, { count: 1, resetTime: now + windowMs })
+      return next()
+    }
+
+    entry.count++
+    if (entry.count > max) {
+      const retryAfter = Math.ceil((entry.resetTime - now) / 1000)
+      res.setHeader('Retry-After', retryAfter)
+      return res.status(429).json({
+        success: false,
+        error: message || 'Trop de requêtes. Veuillez patienter avant de réessayer.',
+      })
+    }
+
+    next()
+  }
+}
+
+// 5 submissions per 15 min per IP (protects SMTP 500/day quota & prevents DoS)
+const formRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Limite de soumission atteinte (maximum 5 par 15 minutes). Veuillez réessayer plus tard.',
+})
+
+// 10 alert subscriptions per 15 min per IP
+const subscribeRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Trop de demandes d’abonnement depuis cette adresse IP. Veuillez patienter.',
+})
+
+// Security: HTML escaping helper to prevent Email HTML Injection (CWE-79 / CWE-80)
+function escapeHtml(str) {
+  if (typeof str !== 'string') return ''
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+// Security: Fixed public base URL to prevent Host Header Poisoning
+function getAppBaseUrl(req) {
+  if (process.env.APP_BASE_URL) {
+    return process.env.APP_BASE_URL.replace(/\/+$/, '')
+  }
+  const host = req.get('host') || 'localhost'
+  const safeHost = /^[a-zA-Z0-9.:-]+$/.test(host) ? host : 'localhost'
+  const protocol =
+    req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https'
+      ? 'https'
+      : 'http'
+  return `${protocol}://${safeHost}`
+}
+
+// Security: Admin API Key verification for protected endpoints (/api/alerts/broadcast, stats)
+const ADMIN_API_KEY = (process.env.ADMIN_API_KEY || 'ergr-zaccar-admin-secret-2026').trim()
+
+function verifyAdminKey(req, res, next) {
+  const providedKey = (
+    req.headers['x-admin-key'] ||
+    (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')
+      ? req.headers.authorization.slice(7)
+      : '') ||
+    ''
+  ).trim()
+
+  if (!providedKey) {
+    return res.status(401).json({
+      success: false,
+      error: 'Authentification requise : clé d’administration manquante (en-tête x-admin-key).',
+    })
+  }
+
+  const keyBuffer = Buffer.from(providedKey)
+  const expectedBuffer = Buffer.from(ADMIN_API_KEY)
+
+  // Constant-time comparison to prevent timing attacks
+  if (
+    keyBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(keyBuffer, expectedBuffer)
+  ) {
+    return res.status(403).json({
+      success: false,
+      error: 'Accès refusé : clé d’administration invalide.',
+    })
+  }
+
+  next()
+}
 
 // Multer storage for uploaded CVs
 const storage = multer.diskStorage({
@@ -94,18 +238,56 @@ const storage = multer.diskStorage({
   },
 })
 
+// Security: Strict Multer filter (ext === .pdf AND mimetype === application/pdf)
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase()
-    if (ext === '.pdf' || file.mimetype === 'application/pdf') {
+    if (ext === '.pdf' && file.mimetype === 'application/pdf') {
       cb(null, true)
     } else {
-      cb(new Error('Seuls les fichiers PDF sont acceptés pour le CV.'))
+      cb(new Error('Seuls les fichiers PDF authentiques (.pdf) sont acceptés pour le CV.'))
     }
   },
 })
+
+// Security: Binary Magic Bytes verification (checks %PDF- header: 0x25, 0x50, 0x44, 0x46)
+function isValidPdfBuffer(filePath) {
+  try {
+    const fd = fs.openSync(filePath, 'r')
+    const buffer = Buffer.alloc(5)
+    fs.readSync(fd, buffer, 0, 5, 0)
+    fs.closeSync(fd)
+    return buffer.toString('utf8').startsWith('%PDF')
+  } catch {
+    return false
+  }
+}
+
+// Security & Loi 18-07: Automatic file retention policy (purges uploads older than 90 days)
+function purgeOldUploads() {
+  const maxAgeMs = 90 * 24 * 60 * 60 * 1000 // 90 days max retention
+  const now = Date.now()
+
+  try {
+    if (fs.existsSync(uploadsDir)) {
+      const files = fs.readdirSync(uploadsDir)
+      for (const file of files) {
+        const filePath = path.join(uploadsDir, file)
+        const stats = fs.statSync(filePath)
+        if (now - stats.mtimeMs > maxAgeMs) {
+          fs.unlinkSync(filePath)
+          console.log(`[Loi 18-07] 🗑️ Purge automatique du CV expiré : ${file}`)
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Loi 18-07] Erreur lors de la purge :', err.message)
+  }
+}
+purgeOldUploads()
+setInterval(purgeOldUploads, 24 * 60 * 60 * 1000).unref()
 
 // Nodemailer SMTP Transporter helper (Google App Password)
 function getTransporter() {
@@ -155,9 +337,9 @@ app.get('/api/health', (_req, res) => {
 })
 
 // --------------------------------------------------------------------------
-// 2. Contact Form Submission
+// 2. Contact Form Submission (with Rate Limiting & HTML Escaping)
 // --------------------------------------------------------------------------
-app.post('/api/contact', async (req, res) => {
+app.post('/api/contact', formRateLimiter, async (req, res) => {
   try {
     const { fullName, organization, email, phone, wilaya, subject, message } = req.body
 
@@ -208,25 +390,25 @@ app.post('/api/contact', async (req, res) => {
     <div class="header">
       <h1>ENTREPRISE RÉGIONALE DE GÉNIE RURAL — ZACCAR</h1>
       <p>Portail Institutionnel — Demande de Contact</p>
-      <div class="badge">Réf : ${reference}</div>
+      <div class="badge">Réf : ${escapeHtml(reference)}</div>
     </div>
     <div class="content">
       <table class="meta-table">
-        <tr><td class="label">Date & Heure :</td><td class="value">${timestamp}</td></tr>
-        <tr><td class="label">Expéditeur :</td><td class="value"><strong>${fullName}</strong></td></tr>
-        <tr><td class="label">Organisme :</td><td class="value">${organization || 'Non renseigné'}</td></tr>
-        <tr><td class="label">Adresse e-mail :</td><td class="value"><a href="mailto:${email}" style="color:#1f6b45; font-weight:600;">${email}</a></td></tr>
-        <tr><td class="label">Téléphone :</td><td class="value">${phone || 'Non renseigné'}</td></tr>
-        <tr><td class="label">Wilaya :</td><td class="value">${wilaya || 'Non renseignée'}</td></tr>
-        <tr><td class="label">Objet :</td><td class="value"><strong>${readableSubject}</strong></td></tr>
+        <tr><td class="label">Date & Heure :</td><td class="value">${escapeHtml(timestamp)}</td></tr>
+        <tr><td class="label">Expéditeur :</td><td class="value"><strong>${escapeHtml(fullName)}</strong></td></tr>
+        <tr><td class="label">Organisme :</td><td class="value">${escapeHtml(organization) || 'Non renseigné'}</td></tr>
+        <tr><td class="label">Adresse e-mail :</td><td class="value"><a href="mailto:${escapeHtml(email)}" style="color:#1f6b45; font-weight:600;">${escapeHtml(email)}</a></td></tr>
+        <tr><td class="label">Téléphone :</td><td class="value">${escapeHtml(phone) || 'Non renseigné'}</td></tr>
+        <tr><td class="label">Wilaya :</td><td class="value">${escapeHtml(wilaya) || 'Non renseignée'}</td></tr>
+        <tr><td class="label">Objet :</td><td class="value"><strong>${escapeHtml(readableSubject)}</strong></td></tr>
       </table>
 
       <div style="font-weight: 600; font-size: 14px; color: #0e3b2e; margin-bottom: 6px;">Message transmis :</div>
-      <div class="message-box">${message}</div>
+      <div class="message-box">${escapeHtml(message)}</div>
     </div>
     <div class="footer">
       Cet e-mail a été transmis depuis le formulaire de contact officiel du site ERGR Zaccar.<br>
-      Pour répondre directement à l'expéditeur, cliquez sur Répondre (Reply-To : ${email}).
+      Pour répondre directement à l'expéditeur, cliquez sur Répondre (Reply-To : ${escapeHtml(email)}).
     </div>
   </div>
 </body>
@@ -251,11 +433,13 @@ app.post('/api/contact', async (req, res) => {
     const transporter = getTransporter()
 
     if (transporter) {
+      const sanitizedName = String(fullName).replace(/["\r\n]/g, '').trim()
+      const sanitizedEmail = String(email).replace(/[\r\n]/g, '').trim()
       await transporter.sendMail({
         from: `"ERGR Zaccar" <${process.env.SMTP_USER.trim()}>`,
         to: RECIPIENT_EMAIL,
-        replyTo: `"${fullName}" <${email}>`,
-        subject: `[ERGR Contact] ${reference} — ${readableSubject} (${fullName})`,
+        replyTo: `"${sanitizedName}" <${sanitizedEmail}>`,
+        subject: `[ERGR Contact] ${reference} — ${readableSubject} (${sanitizedName})`,
         html: htmlContent,
       })
       console.log(`[ERGR-MAIL] ✅ E-mail Google expédié vers ${RECIPIENT_EMAIL} (Réf: ${reference})`)
@@ -279,9 +463,9 @@ app.post('/api/contact', async (req, res) => {
 })
 
 // --------------------------------------------------------------------------
-// 3. Careers / Job Application Submission (with CV PDF upload)
+// 3. Careers / Job Application Submission (with CV PDF upload & Magic Bytes validation)
 // --------------------------------------------------------------------------
-app.post('/api/careers/apply', upload.single('resume'), async (req, res) => {
+app.post('/api/careers/apply', formRateLimiter, upload.single('resume'), async (req, res) => {
   try {
     const {
       fullName,
@@ -302,11 +486,25 @@ app.post('/api/careers/apply', upload.single('resume'), async (req, res) => {
       })
     }
 
+    const cvFile = req.file
+
+    // Security: Strict Binary Magic Bytes verification for uploaded CV
+    if (cvFile) {
+      if (!isValidPdfBuffer(cvFile.path)) {
+        try {
+          fs.unlinkSync(cvFile.path)
+        } catch {}
+        return res.status(400).json({
+          success: false,
+          error: 'Le fichier transmis n’est pas un document PDF authentique (signature de fichier %PDF- invalide).',
+        })
+      }
+    }
+
     const reference =
       req.body.reference ||
       `CAND-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
     const timestamp = getFormattedTimestamp()
-    const cvFile = req.file
 
     const educationLabels = {
       phd: 'Doctorat / Magister',
@@ -363,19 +561,19 @@ app.post('/api/careers/apply', upload.single('resume'), async (req, res) => {
     <div class="header">
       <h1>ENTREPRISE RÉGIONALE DE GÉNIE RURAL — ZACCAR</h1>
       <p>Direction des Ressources Humaines — Dossier de Candidature</p>
-      <div class="badge">Dossier : ${reference}</div>
+      <div class="badge">Dossier : ${escapeHtml(reference)}</div>
     </div>
     <div class="content">
       <table class="meta-table">
-        <tr><td class="label">Date de soumission :</td><td class="value">${timestamp}</td></tr>
-        <tr><td class="label">Candidat(e) :</td><td class="value"><strong>${fullName}</strong></td></tr>
-        <tr><td class="label">Email :</td><td class="value"><a href="mailto:${email}" style="color:#1f6b45; font-weight:600;">${email}</a></td></tr>
-        <tr><td class="label">Téléphone :</td><td class="value"><strong>${phone}</strong></td></tr>
-        <tr><td class="label">Wilaya de résidence :</td><td class="value">${wilaya || 'Non renseignée'}</td></tr>
-        <tr><td class="label">Niveau de formation :</td><td class="value">${readableEducation}</td></tr>
-        <tr><td class="label">Expérience :</td><td class="value">${readableExperience}</td></tr>
-        <tr><td class="label">Type de dossier :</td><td class="value"><strong>${readableType}</strong></td></tr>
-        ${targetOffer ? `<tr><td class="label">Poste ciblé :</td><td class="value"><strong>${targetOffer}</strong></td></tr>` : ''}
+        <tr><td class="label">Date de soumission :</td><td class="value">${escapeHtml(timestamp)}</td></tr>
+        <tr><td class="label">Candidat(e) :</td><td class="value"><strong>${escapeHtml(fullName)}</strong></td></tr>
+        <tr><td class="label">Email :</td><td class="value"><a href="mailto:${escapeHtml(email)}" style="color:#1f6b45; font-weight:600;">${escapeHtml(email)}</a></td></tr>
+        <tr><td class="label">Téléphone :</td><td class="value"><strong>${escapeHtml(phone)}</strong></td></tr>
+        <tr><td class="label">Wilaya de résidence :</td><td class="value">${escapeHtml(wilaya) || 'Non renseignée'}</td></tr>
+        <tr><td class="label">Niveau de formation :</td><td class="value">${escapeHtml(readableEducation)}</td></tr>
+        <tr><td class="label">Expérience :</td><td class="value">${escapeHtml(readableExperience)}</td></tr>
+        <tr><td class="label">Type de dossier :</td><td class="value"><strong>${escapeHtml(readableType)}</strong></td></tr>
+        ${targetOffer ? `<tr><td class="label">Poste ciblé :</td><td class="value"><strong>${escapeHtml(targetOffer)}</strong></td></tr>` : ''}
       </table>
 
       ${
@@ -383,7 +581,7 @@ app.post('/api/careers/apply', upload.single('resume'), async (req, res) => {
           ? `
       <div class="attachment-card">
         <div class="attachment-info">
-          📎 CV joint : ${cvFile.originalname} (${(cvFile.size / 1024).toFixed(1)} Ko)
+          📎 CV joint : ${escapeHtml(cvFile.originalname)} (${(cvFile.size / 1024).toFixed(1)} Ko)
         </div>
         <div style="font-size:12px; color:#1f6b45; margin-top:4px; font-weight:600;">[Fichier PDF attaché au présent e-mail]</div>
       </div>`
@@ -394,13 +592,13 @@ app.post('/api/careers/apply', upload.single('resume'), async (req, res) => {
         coverNote
           ? `
       <div style="font-weight: 600; font-size: 14px; color: #0e3b2e; margin-top: 20px; margin-bottom: 6px;">Note / Motivation du candidat :</div>
-      <div class="message-box">${coverNote}</div>`
+      <div class="message-box">${escapeHtml(coverNote)}</div>`
           : ''
       }
     </div>
     <div class="footer">
       Dossier transmis depuis le module recrutement du site web ERGR Zaccar.<br>
-      Pour répondre directement au candidat, cliquez sur Répondre (Reply-To : ${email}).
+      Pour répondre directement au candidat, cliquez sur Répondre (Reply-To : ${escapeHtml(email)}).
     </div>
   </div>
 </body>
@@ -443,11 +641,13 @@ app.post('/api/careers/apply', upload.single('resume'), async (req, res) => {
     }
 
     if (transporter) {
+      const sanitizedName = String(fullName).replace(/["\r\n]/g, '').trim()
+      const sanitizedEmail = String(email).replace(/[\r\n]/g, '').trim()
       await transporter.sendMail({
         from: `"ERGR Zaccar Recrutement" <${process.env.SMTP_USER.trim()}>`,
         to: RECIPIENT_EMAIL,
-        replyTo: `"${fullName}" <${email}>`,
-        subject: `[ERGR Recrutement] ${reference} — ${fullName} (${readableEducation})`,
+        replyTo: `"${sanitizedName}" <${sanitizedEmail}>`,
+        subject: `[ERGR Recrutement] ${reference} — ${sanitizedName} (${readableEducation})`,
         html: htmlContent,
         attachments,
       })
@@ -474,7 +674,7 @@ app.post('/api/careers/apply', upload.single('resume'), async (req, res) => {
 // ============================================================================
 // ENDPOINT 3: POST /api/alerts/subscribe (Inscription aux Alertes Officielles)
 // ============================================================================
-app.post('/api/alerts/subscribe', async (req, res) => {
+app.post('/api/alerts/subscribe', subscribeRateLimiter, async (req, res) => {
   try {
     const { email, organizationName, tenders, careers, language = 'fr' } = req.body
 
@@ -531,9 +731,8 @@ app.post('/api/alerts/subscribe', async (req, res) => {
 
     // Envoi de l'e-mail de confirmation officiel
     const transporter = getTransporter()
-    const host = req.get('host') || 'localhost'
-    const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'
-    const unsubscribeUrl = `${protocol}://${host}/api/alerts/unsubscribe?token=${token}`
+    const baseUrl = getAppBaseUrl(req)
+    const unsubscribeUrl = `${baseUrl}/api/alerts/unsubscribe?token=${encodeURIComponent(token)}`
 
     const isAr = subscriber.language === 'ar'
     const subject = isAr
@@ -727,9 +926,9 @@ app.post('/api/alerts/unsubscribe', (req, res) => {
 })
 
 // ============================================================================
-// ENDPOINT 5: GET /api/alerts/stats (Monitoring interne)
+// ENDPOINT 5: GET /api/alerts/stats (Monitoring interne protégé)
 // ============================================================================
-app.get('/api/alerts/stats', (_req, res) => {
+app.get('/api/alerts/stats', verifyAdminKey, (_req, res) => {
   const subscribers = getSubscribers()
   const active = subscribers.filter((s) => s.active)
   return res.status(200).json({
@@ -741,9 +940,9 @@ app.get('/api/alerts/stats', (_req, res) => {
 })
 
 // ============================================================================
-// ENDPOINT 6: POST /api/alerts/broadcast (Diffusion officielle d'une alerte)
+// ENDPOINT 6: POST /api/alerts/broadcast (Diffusion officielle protégée)
 // ============================================================================
-app.post('/api/alerts/broadcast', async (req, res) => {
+app.post('/api/alerts/broadcast', verifyAdminKey, async (req, res) => {
   try {
     const {
       type = 'tenders', // 'tenders' | 'careers'
@@ -751,7 +950,7 @@ app.post('/api/alerts/broadcast', async (req, res) => {
       reference,
       summary,
       deadline,
-      link = 'http://localhost:5173/appels-offres',
+      link = 'https://ergr-zaccar.dz/appels-offres',
       qualification,
     } = req.body
 
@@ -774,21 +973,23 @@ app.post('/api/alerts/broadcast', async (req, res) => {
     }
 
     const transporter = getTransporter()
-    const origin = req.get('origin') || `http://${req.get('host') || 'localhost'}`
+    const origin = getAppBaseUrl(req)
     const results = []
 
     for (const sub of targetSubscribers) {
       const isAr = sub.language === 'ar'
-      const unsubscribeUrl = `${origin}/api/alerts/unsubscribe?token=${sub.token}`
+      const unsubscribeUrl = `${origin}/api/alerts/unsubscribe?token=${encodeURIComponent(sub.token)}`
       const isTender = type === 'tenders'
 
       const badgeText = isTender
         ? (isAr ? 'إشعار بمناقصة جديدة' : 'NOUVEL AVIS D’APPEL D’OFFRES')
         : (isAr ? 'إعلان توظيف جديد' : 'NOUVEL AVIS DE RECRUTEMENT')
 
+      const sanitizedRef = String(reference).replace(/[\r\n]/g, '').trim()
+      const sanitizedTitle = String(title).replace(/[\r\n]/g, '').trim()
       const subject = isTender
-        ? `[ERGR Zaccar - Alerte Marché] ${reference} : ${title}`
-        : `[ERGR Zaccar - Alerte Recrutement] ${reference} : ${title}`
+        ? `[ERGR Zaccar - Alerte Marché] ${sanitizedRef} : ${sanitizedTitle}`
+        : `[ERGR Zaccar - Alerte Recrutement] ${sanitizedRef} : ${sanitizedTitle}`
 
       const html = `<!DOCTYPE html>
 <html lang="${isAr ? 'ar' : 'fr'}" dir="${isAr ? 'rtl' : 'ltr'}">
@@ -844,31 +1045,31 @@ app.post('/api/alerts/broadcast', async (req, res) => {
   <div class="wrapper">
     ${getOfficialEmailHeaderHtml()}
     <div class="body">
-      <div class="alert-badge">${badgeText}</div>
-      <h1 class="tender-title">${title}</h1>
-      <div class="tender-ref">${isAr ? 'المرجع الرسمي :' : 'Référence officielle :'} <strong>${reference}</strong></div>
+      <div class="alert-badge">${escapeHtml(badgeText)}</div>
+      <h1 class="tender-title">${escapeHtml(title)}</h1>
+      <div class="tender-ref">${isAr ? 'المرجع الرسمي :' : 'Référence officielle :'} <strong>${escapeHtml(reference)}</strong></div>
       
       <p>${isAr ? 'نعلمكم بنشر الإشعار التالي عبر بوابتنا الرسمية للشفافية والصفقات العمومية :' : 'Nous vous informons de la publication officielle de l’avis suivant sur notre portail institutionnel :'}</p>
 
       <div class="details-card">
         <div class="detail-row">
           <span class="detail-label">${isAr ? 'الموضوع والوصف :' : 'Objet / Synthèse :'}</span>
-          <span class="detail-val">${summary || 'Travaux et prestations d’aménagement forestier et génie rural.'}</span>
+          <span class="detail-val">${escapeHtml(summary || 'Travaux et prestations d’aménagement forestier et génie rural.')}</span>
         </div>
         ${qualification ? `
         <div class="detail-row">
           <span class="detail-label">${isAr ? 'المؤهلات المطلوبة :' : 'Qualification requise :'}</span>
-          <span class="detail-val">${qualification}</span>
+          <span class="detail-val">${escapeHtml(qualification)}</span>
         </div>` : ''}
         ${deadline ? `
         <div class="detail-row">
           <span class="detail-label">${isAr ? 'تاريخ وساعة الإيداع الأخيرة :' : 'Date limite de dépôt :'}</span>
-          <span class="detail-val" style="font-weight:700; color:#b91c1c;">${deadline}</span>
+          <span class="detail-val" style="font-weight:700; color:#b91c1c;">${escapeHtml(deadline)}</span>
         </div>` : ''}
       </div>
 
       <div style="text-align:center;">
-        <a href="${link}" class="cta-btn">${isAr ? 'الاطلاع على دفتر الشروط والتفاصيل' : 'Consulter le dossier & le cahier des charges'}</a>
+        <a href="${escapeHtml(link)}" class="cta-btn">${isAr ? 'الاطلاع على دفتر الشروط والتفاصيل' : 'Consulter le dossier & le cahier des charges'}</a>
       </div>
 
       <div class="law-note">
@@ -880,7 +1081,7 @@ app.post('/api/alerts/broadcast', async (req, res) => {
     <div class="footer">
       <div>© ${new Date().getFullYear()} ERGR Zaccar — Groupe Génie Rural (GGR)</div>
       <div style="margin-top:8px;">
-        <a href="${unsubscribeUrl}" class="unsub-link">${isAr ? 'إلغاء الاشتراك من التنبيهات بنقرة واحدة' : 'Se désinscrire de ces alertes en 1 clic'}</a>
+        <a href="${escapeHtml(unsubscribeUrl)}" class="unsub-link">${isAr ? 'إلغاء الاشتراك من التنبيهات بنقرة واحدة' : 'Se désinscrire de ces alertes en 1 clic'}</a>
       </div>
     </div>
   </div>

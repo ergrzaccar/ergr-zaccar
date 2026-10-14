@@ -13,11 +13,15 @@ RUN npm ci --omit=dev
 COPY server/ ./server/
 COPY .env.example ./.env.example
 
-# Create inbox and upload directories
-RUN mkdir -p server/inbox/uploads
+# Create inbox and upload directories and assign ownership to non-root node user
+RUN mkdir -p server/inbox/uploads && \
+    chown -R node:node /app
 
 ENV PORT=5000
 ENV NODE_ENV=production
+
+# Security: Run as non-privileged node user (CWE-250)
+USER node
 
 EXPOSE 5000
 

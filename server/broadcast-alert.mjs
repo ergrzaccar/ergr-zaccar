@@ -40,9 +40,14 @@ console.log(` • Titre      : ${payload.title}`)
 console.log(` • Échéance   : ${payload.deadline}\n`)
 
 try {
+  const adminKey = (process.env.ADMIN_API_KEY || 'ergr-zaccar-admin-secret-2026').trim()
+
   const res = await fetch(`http://localhost:${PORT}/api/alerts/broadcast`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-key': adminKey,
+    },
     body: JSON.stringify(payload),
   })
 

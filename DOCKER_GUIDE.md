@@ -45,6 +45,10 @@ nano .env
 Assurez-vous que les lignes suivantes sont présentes :
 ```env
 PORT=5000
+NODE_ENV=production
+APP_BASE_URL=https://ergr-zaccar.dz
+ALLOWED_ORIGINS=https://ergr-zaccar.dz,https://www.ergr-zaccar.dz
+ADMIN_API_KEY=votre_cle_secrete_securisee_ici
 RECIPIENT_EMAIL=zaccar.informatique@gmail.com
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465

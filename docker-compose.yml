@@ -8,6 +8,15 @@ services:
       dockerfile: Dockerfile.backend
     container_name: ergr-backend
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
     env_file:
       - .env
     environment:
@@ -27,8 +36,18 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: ergr-frontend
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 1.0
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - backend
     networks:

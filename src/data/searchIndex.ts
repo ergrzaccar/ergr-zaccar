@@ -4,6 +4,7 @@ import { careerJobOffersData } from './careersPage'
 import { centralDepartments, hqContactInfo } from './contactPage'
 import { newsArticlesData } from './newsPage'
 import { nurseries } from './nurseries'
+import { plantSpeciesList } from './plants'
 import { projectsList } from './projectsPage'
 import { tendersData } from './tendersPage'
 
@@ -166,6 +167,40 @@ export function buildSearchIndex(t: TFunction, isArabic: boolean): SearchItem[] 
         'غابات',
       ],
       iconName: 'Sprout',
+    })
+  })
+
+  // 4b. Espèces végétales & Plants du catalogue
+  plantSpeciesList.forEach((plant) => {
+    const commonName = isArabic ? plant.commonNameAr : plant.commonNameFr
+    const subtitle = `${plant.scientificName} • ${isArabic ? plant.familyAr : plant.familyFr} • ${isArabic ? plant.annualProductionAr : plant.annualProductionFr}`
+    const wilayas = Array.from(new Set(plant.availabilities.map((a) => a.wilaya))).join(', ')
+
+    items.push({
+      id: `plant-${plant.id}`,
+      category: 'nurseries',
+      title: commonName,
+      subtitle,
+      url: '/pepinieres',
+      badge: isArabic ? 'شتلات' : 'Espèce',
+      wilaya: wilayas,
+      keywords: [
+        commonName,
+        plant.commonNameFr,
+        plant.commonNameAr,
+        plant.scientificName,
+        plant.familyFr,
+        plant.familyAr,
+        ...plant.usesFr,
+        ...plant.usesAr,
+        'arbre',
+        'plante',
+        'reboisement',
+        'شجرة',
+        'نبتة',
+        'غابة',
+      ],
+      iconName: 'TreePine',
     })
   })
 

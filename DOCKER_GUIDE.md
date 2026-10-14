@@ -58,6 +58,16 @@ SMTP_PASS=votre_mot_de_passe_application_16_caracteres
 APP_NAME=ERGR Zaccar
 ```
 
+> [!IMPORTANT]
+> **Checklist de Sécurité Pré-Déploiement (Serveur VPS)** :
+> 1. **Générez une clé d'administration forte** :
+>    ```bash
+>    openssl rand -hex 32
+>    ```
+>    Copiez le résultat dans `ADMIN_API_KEY=...`. En mode `NODE_ENV=production`, le serveur Node.js refuse de démarrer si cette clé est absente ou correspond à la valeur par défaut.
+> 2. **Mot de passe Google App** : Insérez votre mot de passe d'application Google de 16 caractères sans espaces dans `SMTP_PASS=...`.
+> 3. **Domaine officiel** : Vérifiez que `APP_BASE_URL=https://ergr-zaccar.dz` et `NODE_ENV=production`.
+
 ### 4. Lancer les Conteneurs
 ```bash
 docker compose up -d --build
@@ -73,6 +83,7 @@ docker compose up -d --build
 | **Voir l'état des conteneurs** | `docker compose ps` |
 | **Voir les logs en direct** | `docker compose logs -f` |
 | **Voir les logs du backend (e-mails)** | `docker compose logs -f backend` |
+| **Diffuser une alerte officielle** | `docker compose exec backend node server/broadcast-alert.mjs --type=tenders --ref="AON 05/2026" --title="Avis"` |
 | **Arrêter les conteneurs** | `docker compose down` |
 | **Redémarrer les conteneurs** | `docker compose restart` |
 | **Mettre à jour après un git pull** | `git pull && docker compose up -d --build` |

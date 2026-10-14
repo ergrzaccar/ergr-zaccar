@@ -29,6 +29,8 @@ export function AlertBanner({ topic, targetId = 'alerts-subscription', className
     : t('alertsSubscription.bannerCareersBtn')
 
   const handleScrollToSubscription = () => {
+    if (typeof document === 'undefined') return
+
     const targetElement = document.getElementById(targetId)
     if (targetElement) {
       targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -36,14 +38,18 @@ export function AlertBanner({ topic, targetId = 'alerts-subscription', className
       // Visual highlight pulse on the card
       targetElement.classList.add('alert-card-highlighted')
       setTimeout(() => {
-        targetElement.classList.remove('alert-card-highlighted')
+        if (typeof document !== 'undefined') {
+          targetElement.classList.remove('alert-card-highlighted')
+        }
       }, 2500)
 
       // Auto-focus email field after smooth scroll
       setTimeout(() => {
-        const emailInput = document.getElementById('alert-email') as HTMLInputElement | null
-        if (emailInput) {
-          emailInput.focus({ preventScroll: true })
+        if (typeof document !== 'undefined') {
+          const emailInput = document.getElementById('alert-email') as HTMLInputElement | null
+          if (emailInput) {
+            emailInput.focus({ preventScroll: true })
+          }
         }
       }, 600)
     }

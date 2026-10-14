@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppProviders } from '../app/providers/AppProviders'
 import { ContactPage } from './ContactPage'
@@ -16,6 +16,10 @@ function renderContactPage() {
 }
 
 describe('ContactPage', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('renders the hero section with proof badges and identity card', () => {
     renderContactPage()
 
@@ -45,6 +49,14 @@ describe('ContactPage', () => {
   })
 
   it('validates the contact form and handles successful submission', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, reference: 'ERGR-2026-99999' }),
+      }),
+    )
+
     renderContactPage()
 
     const submitBtn = screen.getByRole('button', { name: /Envoyer la demande/i })

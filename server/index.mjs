@@ -15,6 +15,8 @@ const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.resolve(__dirname, '../.env') })
 
 const app = express()
+// Security: Trust proxy (Nginx reverse proxy)
+app.set('trust proxy', 1)
 const PORT = process.env.PORT || 5000
 const RECIPIENT_EMAIL = (process.env.RECIPIENT_EMAIL || 'zaccar.informatique@gmail.com').trim()
 
@@ -128,6 +130,7 @@ function createRateLimiter({ windowMs, max, message }) {
 
   return (req, res, next) => {
     const clientIp =
+      (req.headers['x-real-ip'] && String(req.headers['x-real-ip']).trim()) ||
       req.headers['x-forwarded-for']?.split(',')[0].trim() ||
       req.socket.remoteAddress ||
       'unknown'
@@ -193,7 +196,14 @@ function getAppBaseUrl(req) {
 }
 
 // Security: Admin API Key verification for protected endpoints (/api/alerts/broadcast, stats)
-const ADMIN_API_KEY = (process.env.ADMIN_API_KEY || 'ergr-zaccar-admin-secret-2026').trim()
+const defaultDevSecret = 'ergr-zaccar-admin-secret-2026'
+const isProd = process.env.NODE_ENV === 'production'
+const ADMIN_API_KEY = (process.env.ADMIN_API_KEY || (isProd ? '' : defaultDevSecret)).trim()
+
+if (isProd && (!ADMIN_API_KEY || ADMIN_API_KEY === defaultDevSecret)) {
+  console.error('❌ ERREUR SÉCURITÉ CRITIQUE : ADMIN_API_KEY doit être définie avec une valeur secrète robuste en production.')
+  process.exit(1)
+}
 
 function verifyAdminKey(req, res, next) {
   const providedKey = (
@@ -911,12 +921,19 @@ app.get('/api/alerts/unsubscribe', (req, res) => {
 })
 
 app.post('/api/alerts/unsubscribe', (req, res) => {
-  const { token, email } = req.body
+  const { token } = req.body
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: 'Jeton de désinscription unique obligatoire pour valider la demande.',
+    })
+  }
+
   const subscribers = getSubscribers()
-  const subscriber = subscribers.find((s) => (token && s.token === token) || (email && s.email === email.trim().toLowerCase()))
+  const subscriber = subscribers.find((s) => s.token === token.trim())
 
   if (!subscriber) {
-    return res.status(404).json({ success: false, error: 'Abonné introuvable.' })
+    return res.status(404).json({ success: false, error: 'Abonné ou jeton introuvable.' })
   }
 
   subscriber.active = false
@@ -1103,9 +1120,8 @@ app.post('/api/alerts/broadcast', verifyAdminKey, async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Alerte diffusée à ${results.length} abonné(s).`,
+      message: `Alerte diffusée avec succès à ${results.length} abonné(s).`,
       count: results.length,
-      recipients: results,
     })
   } catch (err) {
     console.error('[ERGR-ALERTES] ❌ Erreur lors de la diffusion :', err)

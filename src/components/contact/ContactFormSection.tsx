@@ -82,17 +82,22 @@ export function ContactFormSection() {
       })
 
       if (!response.ok) {
-        throw new Error('Erreur réseau')
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || t('contactPage.form.errorMessage') || "Une erreur est survenue lors de l'envoi.")
       }
 
       const data = await response.json()
       const finalRef = data.reference || fallbackRef
       setSubmittedRef(finalRef)
       toast.success(t('contactPage.form.successMessage'), t('contactPage.form.successTitle'))
-    } catch {
-      // Fallback graceful mode
-      setSubmittedRef(fallbackRef)
-      toast.success(t('contactPage.form.successMessage'), t('contactPage.form.successTitle'))
+    } catch (err: unknown) {
+      console.error('Erreur transmission contact:', err)
+      toast.error(
+        err instanceof Error && err.message 
+          ? err.message 
+          : (t('contactPage.form.errorMessage') || "Une erreur est survenue lors de l'envoi. Veuillez réessayer."),
+        t('contactPage.form.errorTitle') || 'Échec de transmission',
+      )
     } finally {
       setIsSubmitting(false)
     }

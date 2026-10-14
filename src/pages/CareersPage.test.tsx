@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppProviders } from '../app/providers/AppProviders'
 import { CareersPage } from './CareersPage'
@@ -16,6 +16,10 @@ function renderCareersPage() {
 }
 
 describe('CareersPage', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('renders the hero section with proof badges, stats and spotlight card', () => {
     renderCareersPage()
 
@@ -184,6 +188,14 @@ describe('CareersPage', () => {
   })
 
   it('validates the online application form and handles successful submission', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, reference: 'CAND-2026-9999' }),
+      }),
+    )
+
     renderCareersPage()
 
     // Attempt to submit empty form

@@ -54,10 +54,7 @@ try {
   const data = await res.json()
   if (data.success) {
     console.log(`✅ ${data.message}`)
-    if (data.recipients && data.recipients.length > 0) {
-      console.log(`📧 Destinataires notifiés :`)
-      data.recipients.forEach((email) => console.log(`   - ${email}`))
-    }
+    console.log(`📧 Nombre d'abonnés notifiés : ${data.count ?? 0}`)
   } else {
     console.error(`❌ Erreur :`, data.error)
   }

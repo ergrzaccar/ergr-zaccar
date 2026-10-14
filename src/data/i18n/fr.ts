@@ -1707,6 +1707,8 @@ export const fr = {
       sendAnother: 'Envoyer un autre message',
       requiredError: 'Ce champ est obligatoire.',
       emailError: 'Veuillez saisir une adresse email valide.',
+      errorTitle: 'Échec de transmission',
+      errorMessage: "Une erreur est survenue lors de l'envoi de votre message. Veuillez vérifier votre connexion et réessayer.",
     },
     hq: {
       eyebrow: 'Siège social & Services centraux',
@@ -2501,6 +2503,10 @@ export const fr = {
         nextSteps:
           'Nos chargés de recrutement examinent avec attention chaque candidature. Si votre profil correspond aux exigences du poste, un premier contact pour entretien technique vous sera adressé sous 15 jours ouvrés.',
         newApplication: 'Déposer une autre candidature',
+      },
+      error: {
+        title: 'Échec de candidature',
+        message: 'Impossible de transmettre votre dossier de candidature. Veuillez vérifier votre connexion et votre fichier PDF.',
       },
     },
     cta: {

@@ -137,7 +137,8 @@ export function CareersApplicationSection({
       })
 
       if (!response.ok) {
-        throw new Error('Erreur réseau')
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || t('careersPage.applicationForm.error.message') || 'Erreur réseau')
       }
 
       const data = await response.json()
@@ -148,13 +149,13 @@ export function CareersApplicationSection({
         t('careersPage.applicationForm.success.message'),
         t('careersPage.applicationForm.success.title'),
       )
-    } catch {
-      // Graceful fallback for offline test environments
-      setGeneratedRef(fallbackRef)
-      setIsSubmitted(true)
-      toast.success(
-        t('careersPage.applicationForm.success.message'),
-        t('careersPage.applicationForm.success.title'),
+    } catch (err: unknown) {
+      console.error('Erreur transmission candidature:', err)
+      toast.error(
+        err instanceof Error && err.message 
+          ? err.message 
+          : (t('careersPage.applicationForm.error.message') || "Impossible de transmettre votre dossier de candidature. Veuillez vérifier votre connexion et votre fichier PDF."),
+        t('careersPage.applicationForm.error.title') || 'Échec de candidature',
       )
     } finally {
       setIsSubmitting(false)
